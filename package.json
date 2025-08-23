@@ -13,7 +13,7 @@
     "start:debug": "NODE_ENV=development nest start --debug --watch",
     "start:prod": "npm run build && npm run verify-build && NODE_ENV=production node --max-old-space-size=512 ./dist/main",
     "start:deploy": "NODE_ENV=production node --max-old-space-size=512 ./dist/main",
-    "start:low-memory": "NODE_ENV=production node --max-old-space-size=256 ./dist/main",
+    "start:low-memory": "NODE_ENV=production node --max-old-space-size=256 ./dist/src/main",
     "start:env-memory": "NODE_ENV=production node --max-old-space-size=${NODE_OPTIONS:-512} ./dist/main",
     "postbuild": "echo 'Build completed successfully' && ls -la dist/",
     "verify-build": "test -f ./dist/main && echo 'Build verification successful' || echo 'Build verification failed'",
