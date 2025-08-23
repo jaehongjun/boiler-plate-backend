@@ -100,6 +100,26 @@ $ npm run start:deploy
 
 **중요**: 배포 환경에서는 `npm run start:prod`를 사용하여 빌드와 실행을 순차적으로 처리하세요.
 
+### 메모리 최적화
+
+클라우드 환경에서 메모리 부족 오류가 발생하는 경우:
+
+```bash
+# 기본 메모리 제한 (512MB)
+$ npm run start:prod
+
+# 낮은 메모리 환경용 (256MB)
+$ npm run start:low-memory
+
+# 환경변수로 메모리 제한 설정
+$ NODE_OPTIONS=256 npm run start:env-memory
+```
+
+**메모리 제한 옵션**:
+- `--max-old-space-size=256`: 256MB 힙 메모리
+- `--max-old-space-size=512`: 512MB 힙 메모리 (기본값)
+- `--max-old-space-size=1024`: 1GB 힙 메모리
+
 ## Compile and run the project
 
 ```bash
