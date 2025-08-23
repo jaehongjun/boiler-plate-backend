@@ -1,0 +1,347 @@
+import {
+  Account,
+  PortfolioAsset,
+  Performance,
+  AssetAllocation,
+  Transaction,
+  PortfolioSummary,
+  PortfolioData,
+} from '../types/portfolio.types';
+
+export const mockAccounts: Record<string, Account> = {
+  acc_001: {
+    id: 'acc_001',
+    name: '김철수 포트폴리오',
+    type: 'INDIVIDUAL',
+    balance: 50000000,
+    cash: 15000000,
+    investedAmount: 35000000,
+    totalValue: 50000000,
+    totalPnL: 5000000,
+    totalPnLPercent: 11.11,
+    lastUpdated: '2024-01-15T09:00:00Z',
+  },
+  acc_002: {
+    id: 'acc_002',
+    name: '이영희 포트폴리오',
+    type: 'INDIVIDUAL',
+    balance: 75000000,
+    cash: 20000000,
+    investedAmount: 55000000,
+    totalValue: 75000000,
+    totalPnL: 8000000,
+    totalPnLPercent: 12.0,
+    lastUpdated: '2024-01-15T09:00:00Z',
+  },
+};
+
+export const mockAssets: Record<string, PortfolioAsset[]> = {
+  acc_001: [
+    {
+      symbol: '005930',
+      name: '삼성전자',
+      quantity: 100,
+      averagePrice: 70000,
+      currentPrice: 75000,
+      marketValue: 7500000,
+      unrealizedPnL: 500000,
+      unrealizedPnLPercent: 7.14,
+      weight: 15.0,
+      sector: '전자기기',
+    },
+    {
+      symbol: '000660',
+      name: 'SK하이닉스',
+      quantity: 80,
+      averagePrice: 120000,
+      currentPrice: 135000,
+      marketValue: 10800000,
+      unrealizedPnL: 1200000,
+      unrealizedPnLPercent: 12.5,
+      weight: 21.6,
+      sector: '반도체',
+    },
+    {
+      symbol: '035420',
+      name: 'NAVER',
+      quantity: 50,
+      averagePrice: 180000,
+      currentPrice: 200000,
+      marketValue: 10000000,
+      unrealizedPnL: 1000000,
+      unrealizedPnLPercent: 11.11,
+      weight: 20.0,
+      sector: 'IT서비스',
+    },
+  ],
+  acc_002: [
+    {
+      symbol: '005380',
+      name: '현대자동차',
+      quantity: 200,
+      averagePrice: 180000,
+      currentPrice: 200000,
+      marketValue: 40000000,
+      unrealizedPnL: 4000000,
+      unrealizedPnLPercent: 11.11,
+      weight: 53.33,
+      sector: '자동차',
+    },
+    {
+      symbol: '051910',
+      name: 'LG화학',
+      quantity: 100,
+      averagePrice: 500000,
+      currentPrice: 550000,
+      marketValue: 55000000,
+      unrealizedPnL: 5000000,
+      unrealizedPnLPercent: 10.0,
+      weight: 73.33,
+      sector: '화학',
+    },
+  ],
+};
+
+export const mockPerformance: Record<string, Performance[]> = {
+  acc_001: [
+    {
+      period: '1D',
+      return: 250000,
+      returnPercent: 0.5,
+      benchmarkReturn: 200000,
+      benchmarkReturnPercent: 0.4,
+      excessReturn: 50000,
+      volatility: 1.2,
+      sharpeRatio: 1.8,
+      maxDrawdown: -2.1,
+    },
+    {
+      period: '1W',
+      return: 1200000,
+      returnPercent: 2.4,
+      benchmarkReturn: 1000000,
+      benchmarkReturnPercent: 2.0,
+      excessReturn: 200000,
+      volatility: 3.5,
+      sharpeRatio: 1.5,
+      maxDrawdown: -1.8,
+    },
+    {
+      period: '1M',
+      return: 3500000,
+      returnPercent: 7.0,
+      benchmarkReturn: 3000000,
+      benchmarkReturnPercent: 6.0,
+      excessReturn: 500000,
+      volatility: 8.2,
+      sharpeRatio: 1.3,
+      maxDrawdown: -3.5,
+    },
+    {
+      period: '3M',
+      return: 8000000,
+      returnPercent: 16.0,
+      benchmarkReturn: 7000000,
+      benchmarkReturnPercent: 14.0,
+      excessReturn: 1000000,
+      volatility: 15.5,
+      sharpeRatio: 1.1,
+      maxDrawdown: -6.2,
+    },
+    {
+      period: '1Y',
+      return: 25000000,
+      returnPercent: 50.0,
+      benchmarkReturn: 22000000,
+      benchmarkReturnPercent: 44.0,
+      excessReturn: 3000000,
+      volatility: 25.8,
+      sharpeRatio: 0.9,
+      maxDrawdown: -12.5,
+    },
+  ],
+  acc_002: [
+    {
+      period: '1D',
+      return: 400000,
+      returnPercent: 0.53,
+      benchmarkReturn: 350000,
+      benchmarkReturnPercent: 0.47,
+      excessReturn: 50000,
+      volatility: 1.1,
+      sharpeRatio: 2.0,
+      maxDrawdown: -1.8,
+    },
+    {
+      period: '1W',
+      return: 1800000,
+      returnPercent: 2.4,
+      benchmarkReturn: 1500000,
+      benchmarkReturnPercent: 2.0,
+      excessReturn: 300000,
+      volatility: 3.2,
+      sharpeRatio: 1.6,
+      maxDrawdown: -1.5,
+    },
+  ],
+};
+
+export const mockAllocation: Record<string, AssetAllocation[]> = {
+  acc_001: [
+    {
+      assetClass: '주식',
+      amount: 35000000,
+      percentage: 70.0,
+      change: 2000000,
+      changePercent: 6.06,
+    },
+    {
+      assetClass: '채권',
+      amount: 10000000,
+      percentage: 20.0,
+      change: 500000,
+      changePercent: 5.26,
+    },
+    {
+      assetClass: '현금',
+      amount: 5000000,
+      percentage: 10.0,
+      change: -500000,
+      changePercent: -9.09,
+    },
+  ],
+  acc_002: [
+    {
+      assetClass: '주식',
+      amount: 55000000,
+      percentage: 73.33,
+      change: 3000000,
+      changePercent: 5.77,
+    },
+    {
+      assetClass: '현금',
+      amount: 20000000,
+      percentage: 26.67,
+      change: -1000000,
+      changePercent: -4.76,
+    },
+  ],
+};
+
+export const mockTransactions: Record<string, Transaction[]> = {
+  acc_001: [
+    {
+      id: 'txn_001',
+      symbol: '005930',
+      type: 'BUY',
+      quantity: 50,
+      price: 70000,
+      amount: 3500000,
+      date: '2024-01-10T14:30:00Z',
+      fees: 3500,
+    },
+    {
+      id: 'txn_002',
+      symbol: '000660',
+      type: 'SELL',
+      quantity: 20,
+      price: 130000,
+      amount: 2600000,
+      date: '2024-01-09T10:15:00Z',
+      fees: 2600,
+    },
+    {
+      id: 'txn_003',
+      symbol: '035420',
+      type: 'BUY',
+      quantity: 30,
+      price: 180000,
+      amount: 5400000,
+      date: '2024-01-08T11:20:00Z',
+      fees: 5400,
+    },
+  ],
+  acc_002: [
+    {
+      id: 'txn_004',
+      symbol: '005380',
+      type: 'BUY',
+      quantity: 100,
+      price: 180000,
+      amount: 18000000,
+      date: '2024-01-12T15:45:00Z',
+      fees: 18000,
+    },
+    {
+      id: 'txn_005',
+      symbol: '051910',
+      type: 'BUY',
+      quantity: 50,
+      price: 500000,
+      amount: 25000000,
+      date: '2024-01-11T09:30:00Z',
+      fees: 25000,
+    },
+  ],
+};
+
+export const mockSummary: Record<string, PortfolioSummary> = {
+  acc_001: {
+    totalAssets: 50000000,
+    totalLiabilities: 0,
+    netWorth: 50000000,
+    totalReturn: 5000000,
+    totalReturnPercent: 11.11,
+    annualizedReturn: 15.2,
+    riskMetrics: {
+      volatility: 12.5,
+      sharpeRatio: 1.2,
+      maxDrawdown: -8.5,
+      beta: 0.95,
+    },
+  },
+  acc_002: {
+    totalAssets: 75000000,
+    totalLiabilities: 0,
+    netWorth: 75000000,
+    totalReturn: 8000000,
+    totalReturnPercent: 12.0,
+    annualizedReturn: 18.5,
+    riskMetrics: {
+      volatility: 14.2,
+      sharpeRatio: 1.4,
+      maxDrawdown: -7.8,
+      beta: 1.05,
+    },
+  },
+};
+
+export const generateMockPortfolioData = (accountId: string): PortfolioData => {
+  const account = mockAccounts[accountId];
+  if (!account) {
+    throw new Error('Account not found');
+  }
+
+  return {
+    account,
+    assets: mockAssets[accountId] || [],
+    performance: mockPerformance[accountId] || [],
+    allocation: mockAllocation[accountId] || [],
+    recentTransactions: mockTransactions[accountId] || [],
+    summary: mockSummary[accountId] || {
+      totalAssets: 0,
+      totalLiabilities: 0,
+      netWorth: 0,
+      totalReturn: 0,
+      totalReturnPercent: 0,
+      annualizedReturn: 0,
+      riskMetrics: {
+        volatility: 0,
+        sharpeRatio: 0,
+        maxDrawdown: 0,
+        beta: 0,
+      },
+    },
+    lastUpdated: new Date().toISOString(),
+  };
+};

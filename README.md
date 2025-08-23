@@ -25,6 +25,36 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Portfolio API
+
+이 프로젝트는 포트폴리오 관리를 위한 REST API를 제공합니다.
+
+### API 엔드포인트
+
+- `GET /api/portfolio/{accountId}` - 포트폴리오 전체 데이터 조회
+- `GET /api/portfolio/{accountId}/performance` - 포트폴리오 성과 조회
+- `GET /api/portfolio/{accountId}/assets` - 포트폴리오 자산 조회
+- `GET /api/portfolio/{accountId}/allocation` - 포트폴리오 할당 조회
+- `GET /api/portfolio/{accountId}/transactions` - 최근 거래 내역 조회
+
+### 사용 가능한 계정 ID
+
+- `acc_001` - 김철수 포트폴리오
+- `acc_002` - 이영희 포트폴리오
+
+### 예시 요청
+
+```bash
+# 포트폴리오 전체 데이터 조회
+curl http://localhost:3000/api/portfolio/acc_001
+
+# 특정 기간 성과 조회
+curl http://localhost:3000/api/portfolio/acc_001/performance?period=1M
+
+# 거래 내역 조회 (최대 5건)
+curl http://localhost:3000/api/portfolio/acc_001/transactions?limit=5
+```
+
 ## Project setup
 
 ```bash
