@@ -61,6 +61,31 @@ curl http://localhost:3000/api/portfolio/acc_001/transactions?limit=5
 $ npm install
 ```
 
+## Environment Configuration
+
+프로젝트는 환경별로 다른 설정을 사용합니다:
+
+### 환경변수 설정
+
+- `NODE_ENV`: 애플리케이션 환경 설정
+  - `development`: 개발 환경 (Swagger 활성화)
+  - `production`: 프로덕션 환경 (Swagger 비활성화, 메모리 최적화)
+
+### 스크립트별 환경 설정
+
+```bash
+# 개발 환경 (Swagger 활성화)
+$ npm run start:dev
+
+# 프로덕션 환경 (Swagger 비활성화)
+$ npm run start:prod
+
+# 일반 시작 (프로덕션 모드)
+$ npm run start
+```
+
+**참고**: 프로덕션 환경에서는 Swagger가 자동으로 비활성화되어 메모리 사용량이 줄어듭니다.
+
 ## Compile and run the project
 
 ```bash
