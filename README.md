@@ -86,6 +86,20 @@ $ npm run start
 
 **참고**: 프로덕션 환경에서는 Swagger가 자동으로 비활성화되어 메모리 사용량이 줄어듭니다.
 
+### 배포 환경 설정
+
+Render.com 등 클라우드 배포 환경에서는 다음 스크립트를 사용하세요:
+
+```bash
+# 배포 전 빌드 포함
+$ npm run start:prod
+
+# 빌드 후 시작 (빌드가 이미 완료된 경우)
+$ npm run start:deploy
+```
+
+**중요**: 배포 환경에서는 `npm run start:prod`를 사용하여 빌드와 실행을 순차적으로 처리하세요.
+
 ## Compile and run the project
 
 ```bash
