@@ -8,6 +8,7 @@ const postgres = require('postgres') as unknown as (
   opts?: unknown,
 ) => import('postgres').Sql<any>;
 import * as userSchemas from './schemas/users';
+import * as crmSchemas from './schemas/crm.schema';
 
 export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
 
@@ -26,7 +27,7 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
         });
 
         return drizzle(client, {
-          schema: { ...userSchemas },
+          schema: { ...userSchemas, ...crmSchemas },
         });
       },
     },

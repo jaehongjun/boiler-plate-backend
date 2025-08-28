@@ -55,6 +55,84 @@ curl http://localhost:3000/api/portfolio/acc_001/performance?period=1M
 curl http://localhost:3000/api/portfolio/acc_001/transactions?limit=5
 ```
 
+## CRM API
+
+투자증권 CRM 시스템을 위한 REST API를 제공합니다.
+
+### API 엔드포인트
+
+#### 고객 관리
+
+- `POST /crm/customers` - 고객 생성
+- `GET /crm/customers` - 고객 목록 조회 (검색/필터링 지원)
+- `GET /crm/customers/:id` - 고객 상세 조회
+- `PUT /crm/customers/:id` - 고객 정보 수정
+- `DELETE /crm/customers/:id` - 고객 삭제
+
+#### 상담/문의 이력
+
+- `POST /crm/customers/:customerId/contacts` - 상담 이력 생성
+- `GET /crm/customers/:customerId/contacts` - 고객별 상담 이력 조회
+
+#### 투자계좌
+
+- `POST /crm/customers/:customerId/accounts` - 계좌 생성
+- `GET /crm/customers/:customerId/accounts` - 고객별 계좌 목록 조회
+- `PUT /crm/accounts/:id` - 계좌 정보 수정
+
+#### 투자상품
+
+- `POST /crm/products` - 상품 생성
+- `GET /crm/products` - 상품 목록 조회
+- `GET /crm/products/:id` - 상품 상세 조회
+- `PUT /crm/products/:id` - 상품 정보 수정
+
+#### 거래내역
+
+- `POST /crm/transactions` - 거래 생성
+- `GET /crm/transactions` - 거래내역 조회 (검색/필터링 지원)
+
+#### 통계
+
+- `GET /crm/statistics/customers` - 고객 통계
+- `GET /crm/statistics/transactions` - 거래 통계
+
+### 예시 요청
+
+```bash
+# 고객 생성
+curl -X POST http://localhost:3000/crm/customers \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerName": "홍길동",
+    "phoneNo": "010-1234-5678",
+    "email": "hong@example.com",
+    "customerGrade": "VIP",
+    "joinDate": "2024-01-01"
+  }'
+
+# 고객 검색 (VIP 등급)
+curl "http://localhost:3000/crm/customers?customerGrade=VIP&page=1&limit=10" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 거래 생성
+curl -X POST http://localhost:3000/crm/transactions \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accountId": 1,
+    "productId": 1,
+    "tradeType": "BUY",
+    "tradeAmount": 100,
+    "tradePrice": 50000
+  }'
+```
+
+### 상세 API 문서
+
+자세한 API 문서는 [CRM_API_DOCUMENTATION.md](./CRM_API_DOCUMENTATION.md)를 참조하세요.
+
 ## Project setup
 
 ```bash
@@ -116,6 +194,7 @@ $ NODE_OPTIONS=256 npm run start:env-memory
 ```
 
 **메모리 제한 옵션**:
+
 - `--max-old-space-size=256`: 256MB 힙 메모리
 - `--max-old-space-size=512`: 512MB 힙 메모리 (기본값)
 - `--max-old-space-size=1024`: 1GB 힙 메모리

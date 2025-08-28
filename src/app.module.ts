@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
+import { CrmModule } from './crm/crm.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PortfolioModule } from './portfolio/portfolio.module';
     DatabaseModule,
     AuthModule,
     PortfolioModule,
+    CrmModule,
   ],
 })
 export class AppModule {}
