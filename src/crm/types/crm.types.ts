@@ -132,7 +132,7 @@ export interface CreateTransactionDto {
 
 // API 응답 타입
 export interface ApiResponse<T> {
-  data: T;
+  data: T | undefined;
   message?: string;
 }
 

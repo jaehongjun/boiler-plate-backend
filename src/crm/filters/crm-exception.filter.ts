@@ -23,7 +23,11 @@ export class CrmExceptionFilter implements ExceptionFilter {
       message =
         typeof exceptionResponse === 'string'
           ? exceptionResponse
-          : (exceptionResponse as any).message || exception.message;
+          : typeof exceptionResponse === 'object' &&
+              exceptionResponse !== null &&
+              'message' in exceptionResponse
+            ? (exceptionResponse as { message: string }).message
+            : exception.message;
     }
 
     const errorResponse = {
