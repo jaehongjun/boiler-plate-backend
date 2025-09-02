@@ -186,14 +186,7 @@ export class CrmService {
     this.logger.log(`고객 삭제 시작: ID ${id}`);
 
     try {
-      const result = await this.db
-        .delete(customers)
-        .where(eq(customers.customerId, id));
-
-      if (result.length === 0) {
-        this.logger.warn(`삭제할 고객을 찾을 수 없음: ID ${id}`);
-        throw new Error('고객을 찾을 수 없습니다.');
-      }
+      await this.db.delete(customers).where(eq(customers.customerId, id));
 
       this.logger.log(`고객 삭제 완료: ID ${id}`);
     } catch (error) {

@@ -11,7 +11,7 @@ import {
 export class LoginDto {
   @ApiProperty({
     description: '사용자 이메일',
-    example: 'user@example.com',
+    example: 'wwwa0070@gmail.com',
     format: 'email',
   })
   @IsEmail()
@@ -30,7 +30,7 @@ export class LoginDto {
 export class RegisterDto {
   @ApiProperty({
     description: '사용자 이메일',
-    example: 'user@example.com',
+    example: 'wwwa0070@gmail.com',
     format: 'email',
   })
   @IsEmail()

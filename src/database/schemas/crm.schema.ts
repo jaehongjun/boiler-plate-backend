@@ -7,6 +7,7 @@ import {
   timestamp,
   decimal,
   pgEnum,
+  serial,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -53,8 +54,9 @@ export const riskLevelEnum = pgEnum('risk_level', ['HIGH', 'MEDIUM', 'LOW']);
 export const tradeTypeEnum = pgEnum('trade_type', ['BUY', 'SELL']);
 
 // 고객 테이블
+// PK는 serial() 사용 (drizzle serial -> int4). 만약 bigint ID 유지가 필요하면 bigint + 시퀀스 직접 지정 필요.
 export const customers = pgTable('tb_customer', {
-  customerId: bigint('customer_id', { mode: 'number' }).primaryKey().notNull(),
+  customerId: serial('customer_id').primaryKey(),
   customerName: varchar('customer_name', { length: 100 }).notNull(),
   residentNo: varchar('resident_no', { length: 20 }), // 주민번호(암호화/마스킹 필요)
   phoneNo: varchar('phone_no', { length: 20 }),
@@ -69,7 +71,7 @@ export const customers = pgTable('tb_customer', {
 
 // 상담/문의 이력 테이블
 export const contactHistory = pgTable('tb_contact_history', {
-  contactId: bigint('contact_id', { mode: 'number' }).primaryKey().notNull(),
+  contactId: serial('contact_id').primaryKey(),
   customerId: bigint('customer_id', { mode: 'number' }).notNull(),
   contactType: contactTypeEnum('contact_type'),
   contactPurpose: contactPurposeEnum('contact_purpose'),
@@ -80,7 +82,7 @@ export const contactHistory = pgTable('tb_contact_history', {
 
 // 투자계좌 테이블
 export const accounts = pgTable('tb_account', {
-  accountId: bigint('account_id', { mode: 'number' }).primaryKey().notNull(),
+  accountId: serial('account_id').primaryKey(),
   customerId: bigint('customer_id', { mode: 'number' }).notNull(),
   accountNo: varchar('account_no', { length: 30 }).unique().notNull(),
   accountType: accountTypeEnum('account_type'),
@@ -91,7 +93,7 @@ export const accounts = pgTable('tb_account', {
 
 // 투자상품 테이블
 export const products = pgTable('tb_product', {
-  productId: bigint('product_id', { mode: 'number' }).primaryKey().notNull(),
+  productId: serial('product_id').primaryKey(),
   productName: varchar('product_name', { length: 100 }).notNull(),
   productType: productTypeEnum('product_type'),
   riskLevel: riskLevelEnum('risk_level'),
@@ -101,9 +103,7 @@ export const products = pgTable('tb_product', {
 
 // 거래내역 테이블
 export const transactions = pgTable('tb_transaction', {
-  transactionId: bigint('transaction_id', { mode: 'number' })
-    .primaryKey()
-    .notNull(),
+  transactionId: serial('transaction_id').primaryKey(),
   accountId: bigint('account_id', { mode: 'number' }).notNull(),
   productId: bigint('product_id', { mode: 'number' }).notNull(),
   tradeType: tradeTypeEnum('trade_type'),

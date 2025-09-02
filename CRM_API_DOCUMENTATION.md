@@ -6,7 +6,7 @@
 
 ## 기본 정보
 
-- **Base URL**: `http://localhost:3000/crm`
+- **Base URL**: `http://localhost:8080/api`
 - **인증**: JWT 토큰 필요 (Authorization 헤더에 Bearer 토큰 포함)
 - **응답 형식**: JSON
 
@@ -25,7 +25,7 @@ interface ApiResponse<T> {
 
 ### 1.1 고객 생성
 
-**POST** `/customers`
+**POST** `/crm/customers`
 
 **Request Body:**
 

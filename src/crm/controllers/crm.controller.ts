@@ -97,7 +97,8 @@ export class CrmController {
     description: '고객 목록 조회 성공',
   })
   async getCustomers(
-    @Query() query: CustomerSearchParams,
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    query: CustomerSearchParams,
   ): Promise<CrmApiResponse<PaginatedResponse<Customer>>> {
     try {
       const customers = await this.crmService.getCustomers(query);
@@ -196,6 +197,7 @@ export class CrmController {
       await this.crmService.deleteCustomer(id);
       return {
         data: undefined,
+        status: 'SUCCESS',
         message: '고객이 성공적으로 삭제되었습니다.',
       };
     } catch (error) {
@@ -541,7 +543,8 @@ export class CrmController {
     description: '거래내역 조회 성공',
   })
   async getTransactions(
-    @Query() query: TransactionSearchParams,
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    query: TransactionSearchParams,
   ): Promise<CrmApiResponse<PaginatedResponse<Transaction>>> {
     try {
       const transactions = await this.crmService.getTransactions(query);

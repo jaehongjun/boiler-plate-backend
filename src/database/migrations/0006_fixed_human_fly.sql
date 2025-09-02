@@ -1,0 +1,1 @@
+ALTER TABLE "tb_customer" ALTER COLUMN "customer_id" DROP DEFAULT;

@@ -1,4 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsNumber, Min } from 'class-validator';
 
 export class CreateCustomerDto {
   @ApiProperty({ description: '고객명', example: '홍길동' })
@@ -291,17 +293,31 @@ export class CustomerSearchParams {
   joinDateTo?: string;
 
   @ApiProperty({ description: '페이지 번호', required: false, example: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Transform(({ value }) => (typeof value === 'string' ? parseInt(value, 10) : value) || 1)
   page?: number;
 
   @ApiProperty({ description: '페이지 크기', required: false, example: 10 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Transform(({ value }) => parseInt(value) || 10)
   limit?: number;
 }
 
 export class TransactionSearchParams {
   @ApiProperty({ description: '계좌 ID', required: false, example: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => typeof value === 'string' ? parseInt(value, 10) : value)
   accountId?: number;
 
   @ApiProperty({ description: '상품 ID', required: false, example: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => typeof value === 'string' ? parseInt(value, 10) : value)
   productId?: number;
 
   @ApiProperty({
@@ -327,8 +343,16 @@ export class TransactionSearchParams {
   tradeDateTo?: Date;
 
   @ApiProperty({ description: '페이지 번호', required: false, example: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Transform(({ value }) => (typeof value === 'string' ? parseInt(value, 10) : value) || 1)
   page?: number;
 
   @ApiProperty({ description: '페이지 크기', required: false, example: 10 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Transform(({ value }) => parseInt(value) || 10)
   limit?: number;
 }

@@ -1,0 +1,2 @@
+ALTER TABLE "tb_customer" ALTER COLUMN "customer_id" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "tb_customer" ALTER COLUMN "customer_id" SET DEFAULT nextval('tb_customer_customer_id_seq');
