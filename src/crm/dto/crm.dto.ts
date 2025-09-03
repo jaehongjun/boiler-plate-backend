@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsOptional, IsNumber, Min } from 'class-validator';
+import { IsOptional, IsNumber, Min, IsString, IsEnum, IsDateString } from 'class-validator';
 
 export class CreateCustomerDto {
   @ApiProperty({ description: '고객명', example: '홍길동' })
@@ -260,6 +260,8 @@ export class CreateTransactionDto {
 
 export class CustomerSearchParams {
   @ApiProperty({ description: '고객명', required: false, example: '홍길동' })
+  @IsOptional()
+  @IsString()
   customerName?: string;
 
   @ApiProperty({
@@ -268,6 +270,8 @@ export class CustomerSearchParams {
     enum: ['VIP', 'GENERAL', 'POTENTIAL'],
     example: 'VIP',
   })
+  @IsOptional()
+  @IsEnum(['VIP', 'GENERAL', 'POTENTIAL'])
   customerGrade?: 'VIP' | 'GENERAL' | 'POTENTIAL';
 
   @ApiProperty({
@@ -276,6 +280,8 @@ export class CustomerSearchParams {
     enum: ['ACTIVE', 'INACTIVE'],
     example: 'ACTIVE',
   })
+  @IsOptional()
+  @IsEnum(['ACTIVE', 'INACTIVE'])
   status?: 'ACTIVE' | 'INACTIVE';
 
   @ApiProperty({
@@ -283,6 +289,8 @@ export class CustomerSearchParams {
     required: false,
     example: '2024-01-01',
   })
+  @IsOptional()
+  @IsDateString()
   joinDateFrom?: string;
 
   @ApiProperty({
@@ -290,6 +298,8 @@ export class CustomerSearchParams {
     required: false,
     example: '2024-12-31',
   })
+  @IsOptional()
+  @IsDateString()
   joinDateTo?: string;
 
   @ApiProperty({ description: '페이지 번호', required: false, example: 1 })
@@ -303,7 +313,7 @@ export class CustomerSearchParams {
   @IsOptional()
   @IsNumber()
   @Min(1)
-  @Transform(({ value }) => parseInt(value) || 10)
+  @Transform(({ value }) => (typeof value === 'string' ? parseInt(value, 10) : value) || 10)
   limit?: number;
 }
 
@@ -326,6 +336,8 @@ export class TransactionSearchParams {
     enum: ['BUY', 'SELL'],
     example: 'BUY',
   })
+  @IsOptional()
+  @IsEnum(['BUY', 'SELL'])
   tradeType?: 'BUY' | 'SELL';
 
   @ApiProperty({
@@ -333,6 +345,8 @@ export class TransactionSearchParams {
     required: false,
     example: '2024-01-01',
   })
+  @IsOptional()
+  @IsDateString()
   tradeDateFrom?: Date;
 
   @ApiProperty({
@@ -340,6 +354,8 @@ export class TransactionSearchParams {
     required: false,
     example: '2024-12-31',
   })
+  @IsOptional()
+  @IsDateString()
   tradeDateTo?: Date;
 
   @ApiProperty({ description: '페이지 번호', required: false, example: 1 })
@@ -353,6 +369,6 @@ export class TransactionSearchParams {
   @IsOptional()
   @IsNumber()
   @Min(1)
-  @Transform(({ value }) => parseInt(value) || 10)
+  @Transform(({ value }) => (typeof value === 'string' ? parseInt(value, 10) : value) || 10)
   limit?: number;
 }
