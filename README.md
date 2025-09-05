@@ -72,7 +72,7 @@ curl http://localhost:3000/api/portfolio/acc_001/transactions?limit=5
 #### 상담/문의 이력
 
 - `POST /crm/customers/:customerId/contacts` - 상담 이력 생성
-- `GET /crm/customers/:customerId/contacts` - 고객별 상담 이력 조회
+- `GET /crm/customers/contacts` - 상담 이력 조회 (customerId 쿼리 파라미터로 특정 고객 조회 가능)
 
 #### 투자계좌
 

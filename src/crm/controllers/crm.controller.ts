@@ -248,22 +248,23 @@ export class CrmController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('customers/:customerId/contacts')
+  @Get('customers/contacts')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: '고객 상담 이력 조회',
-    description: '특정 고객의 상담 이력을 조회합니다.',
+    summary: '상담 이력 조회',
+    description: '상담 이력을 조회합니다. customerId를 지정하면 특정 고객의 이력만 조회됩니다.',
   })
   @ApiResponse({
     status: 200,
     description: '상담 이력 조회 성공',
   })
-  async getContactHistoryByCustomerId(
-    @Param('customerId', ParseIntPipe) customerId: number,
+  async getContactHistory(
+    @Query('customerId') customerId?: number,
   ): Promise<CrmApiResponse<ContactHistory[]>> {
     try {
-      const contacts =
-        await this.crmService.getContactHistoryByCustomerId(customerId);
+      const contacts = customerId
+        ? await this.crmService.getContactHistoryByCustomerId(customerId)
+        : await this.crmService.getContactHistory();
       return {
         data: contacts,
       };

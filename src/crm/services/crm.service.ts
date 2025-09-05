@@ -243,6 +243,23 @@ export class CrmService {
     }
   }
 
+  async getContactHistory(): Promise<ContactHistory[]> {
+    this.logger.log(`전체 상담 이력 조회 시작`);
+
+    try {
+      const contacts = await this.db
+        .select()
+        .from(contactHistory)
+        .orderBy(desc(contactHistory.contactDate));
+
+      this.logger.log(`전체 상담 이력 조회 완료: ${contacts.length}건`);
+      return contacts;
+    } catch (error) {
+      this.logger.error(`전체 상담 이력 조회 실패: ${error.message}`);
+      throw error;
+    }
+  }
+
   // ==================== 투자계좌 관리 ====================
 
   async createAccount(createAccountDto: CreateAccountDto): Promise<Account> {

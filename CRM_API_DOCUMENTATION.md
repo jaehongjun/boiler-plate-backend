@@ -161,9 +161,13 @@ interface ApiResponse<T> {
 }
 ```
 
-### 2.2 고객별 상담 이력 조회
+### 2.2 상담 이력 조회
 
-**GET** `/customers/:customerId/contacts`
+**GET** `/customers/contacts`
+
+**Query Parameters:**
+
+- `customerId` (optional): 고객 ID (지정 시 해당 고객의 이력만 조회)
 
 ## 3. 투자계좌 API
 
