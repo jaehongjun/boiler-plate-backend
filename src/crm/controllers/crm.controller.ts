@@ -9,10 +9,10 @@ import {
   CreateTransactionDto,
   CustomerSearchParams,
   TransactionSearchParams,
+  ProductListQueryDto,
 } from '../dto/crm.dto';
-import {
+import type {
   ApiResponse as CrmApiResponse,
-  PaginatedResponse,
   Customer,
   ContactHistory,
   Account,
@@ -99,12 +99,10 @@ export class CrmController {
   async getCustomers(
     @Query(new ValidationPipe({ transform: true, whitelist: true }))
     query: CustomerSearchParams,
-  ): Promise<CrmApiResponse<PaginatedResponse<Customer>>> {
+  ): Promise<CrmApiResponse<Customer[]>> {
     try {
-      const customers = await this.crmService.getCustomers(query);
-      return {
-        data: customers,
-      };
+      const result = await this.crmService.getCustomers(query);
+      return result;
     } catch (error) {
       throw new HttpException(
         error instanceof Error
@@ -421,12 +419,13 @@ export class CrmController {
     status: 200,
     description: '상품 목록 조회 성공',
   })
-  async getProducts(): Promise<CrmApiResponse<Product[]>> {
+  async getProducts(
+  @Query(new ValidationPipe({ transform: true, whitelist: true }))
+  query: ProductListQueryDto,
+  ): Promise<CrmApiResponse<Product[]>> {
     try {
-      const products = await this.crmService.getProducts();
-      return {
-        data: products,
-      };
+      const result = await this.crmService.getProducts(query);
+      return result;
     } catch (error) {
       throw new HttpException(
         error instanceof Error
@@ -546,12 +545,10 @@ export class CrmController {
   async getTransactions(
     @Query(new ValidationPipe({ transform: true, whitelist: true }))
     query: TransactionSearchParams,
-  ): Promise<CrmApiResponse<PaginatedResponse<Transaction>>> {
+  ): Promise<CrmApiResponse<Transaction[]>> {
     try {
-      const transactions = await this.crmService.getTransactions(query);
-      return {
-        data: transactions,
-      };
+      const result = await this.crmService.getTransactions(query);
+      return result;
     } catch (error) {
       throw new HttpException(
         error instanceof Error

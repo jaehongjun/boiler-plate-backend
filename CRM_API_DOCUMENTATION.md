@@ -64,7 +64,7 @@ interface ApiResponse<T> {
 
 ### 1.2 고객 목록 조회
 
-**GET** `/customers`
+**GET** `/crm/customers`
 
 **Query Parameters:**
 
@@ -81,30 +81,28 @@ interface ApiResponse<T> {
 ```json
 {
   "success": true,
-  "data": {
-    "data": [
-      {
-        "customerId": 1,
-        "customerName": "홍길동",
-        "customerGrade": "VIP",
-        "status": "ACTIVE",
-        "joinDate": "2024-01-01",
-        "regDate": "2024-01-01T00:00:00.000Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 1,
-      "totalPages": 1
+  "data": [
+    {
+      "customerId": 1,
+      "customerName": "홍길동",
+      "customerGrade": "VIP",
+      "status": "ACTIVE",
+      "joinDate": "2024-01-01",
+      "regDate": "2024-01-01T00:00:00.000Z"
     }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 1,
+    "totalPages": 1
   }
 }
 ```
 
 ### 1.3 고객 상세 조회
 
-**GET** `/customers/:id`
+**GET** `/crm/customers/:id`
 
 **Response:**
 
@@ -129,7 +127,7 @@ interface ApiResponse<T> {
 
 ### 1.4 고객 정보 수정
 
-**PUT** `/customers/:id`
+**PUT** `/crm/customers/:id`
 
 **Request Body:**
 
@@ -142,13 +140,13 @@ interface ApiResponse<T> {
 
 ### 1.5 고객 삭제
 
-**DELETE** `/customers/:id`
+**DELETE** `/crm/customers/:id`
 
 ## 2. 상담/문의 이력 API
 
 ### 2.1 상담 이력 생성
 
-**POST** `/customers/:customerId/contacts`
+**POST** `/crm/customers/:customerId/contacts`
 
 **Request Body:**
 
@@ -163,7 +161,7 @@ interface ApiResponse<T> {
 
 ### 2.2 상담 이력 조회
 
-**GET** `/customers/contacts`
+**GET** `/crm/customers/contacts`
 
 **Query Parameters:**
 
@@ -220,17 +218,114 @@ interface ApiResponse<T> {
 }
 ```
 
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "productId": 1,
+    "productName": "삼성전자 주식",
+    "productType": "STOCK",
+    "riskLevel": "MEDIUM",
+    "issuer": "삼성전자",
+    "createdAt": "2025-09-15T00:00:00.000Z"
+  },
+  "message": "상품이 성공적으로 생성되었습니다."
+}
+```
+
 ### 4.2 상품 목록 조회
 
-**GET** `/products`
+**GET** `/crm/products`
+
+**Query Parameters:**
+
+- `page` (optional): 페이지 번호 (기본값: 1)
+- `limit` (optional): 페이지당 개수 (기본값: 10)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "productId": 1,
+      "productName": "삼성전자 주식",
+      "productType": "STOCK",
+      "riskLevel": "MEDIUM",
+      "issuer": "삼성전자",
+      "createdAt": "2025-09-15T00:00:00.000Z"
+    },
+    {
+      "productId": 2,
+      "productName": "국채 펀드",
+      "productType": "FUND",
+      "riskLevel": "LOW",
+      "issuer": "한국은행",
+      "createdAt": "2025-09-10T00:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 2,
+    "totalPages": 1
+  }
+}
+```
 
 ### 4.3 상품 상세 조회
 
 **GET** `/products/:id`
 
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "productId": 1,
+    "productName": "삼성전자 주식",
+    "productType": "STOCK",
+    "riskLevel": "MEDIUM",
+    "issuer": "삼성전자",
+    "createdAt": "2025-09-15T00:00:00.000Z"
+  }
+}
+```
+
 ### 4.4 상품 정보 수정
 
 **PUT** `/products/:id`
+
+**Request Body:**
+
+```json
+{
+  "productName": "삼성전자 우선주",
+  "riskLevel": "HIGH"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "productId": 1,
+    "productName": "삼성전자 우선주",
+    "productType": "STOCK",
+    "riskLevel": "HIGH",
+    "issuer": "삼성전자",
+    "createdAt": "2025-09-15T00:00:00.000Z",
+    "updatedAt": "2025-09-15T12:00:00.000Z"
+  },
+  "message": "상품 정보가 성공적으로 수정되었습니다."
+}
+```
 
 ## 5. 거래내역 API
 
@@ -264,6 +359,39 @@ interface ApiResponse<T> {
 - `page` (optional): 페이지 번호
 - `limit` (optional): 페이지당 개수
 
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "transactionId": 1,
+      "accountId": 1,
+      "productId": 1,
+      "tradeType": "BUY",
+      "tradeAmount": 100,
+      "tradePrice": 50000,
+      "tradeDate": "2025-09-15T10:00:00.000Z"
+    },
+    {
+      "transactionId": 2,
+      "accountId": 1,
+      "productId": 2,
+      "tradeType": "SELL",
+      "tradeAmount": 50,
+      "tradePrice": 60000,
+      "tradeDate": "2025-09-14T15:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 2,
+    "totalPages": 1
+  }
+}
+```
 ## 6. 통계 API
 
 ### 6.1 고객 통계

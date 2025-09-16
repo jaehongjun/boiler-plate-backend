@@ -1,0 +1,18 @@
+{
+  "$schema": "https://biomejs.dev/schemas/%5E1.0.0/schema.json",
+  "javascript": {
+    "parser": {
+      // Enable support for NestJS-style parameter decorators like @Body, @Param, @Query, and constructor param decorators
+      "unsafeParameterDecorators": true
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "style": {
+        // Allow type-only import warnings at warn level
+        "useImportType": "warn"
+      }
+    }
+  }
+}

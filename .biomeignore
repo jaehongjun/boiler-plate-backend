@@ -1,0 +1,2 @@
+# Ignore NestJS files with parameter decorators that Biome parses incorrectly
+src/**/*.ts

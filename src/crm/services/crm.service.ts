@@ -1,5 +1,5 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { eq, and, like, gte, lte, desc, asc, count, sum } from 'drizzle-orm';
+import { eq, and, like, gte, lte, desc, asc, count, sum, or } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { DATABASE_CONNECTION } from '../../database/database.module';
 import {
@@ -25,7 +25,8 @@ import {
   Account,
   Product,
   Transaction,
-  PaginatedResponse,
+  ApiResponse,
+  Pagination,
 } from '../types/crm.types';
 
 @Injectable()
@@ -60,7 +61,7 @@ export class CrmService {
 
   async getCustomers(
     filters: CustomerSearchParams,
-  ): Promise<PaginatedResponse<Customer>> {
+  ): Promise<ApiResponse<Customer[]>> {
     this.logger.log(`고객 목록 조회 시작: ${JSON.stringify(filters)}`);
 
     try {
@@ -111,18 +112,19 @@ export class CrmService {
         .limit(limit)
         .offset(offset);
 
-      const result = {
-        data: customersList,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
+      const pagination: Pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       };
 
       this.logger.log(`고객 목록 조회 완료: 총 ${total}건, 페이지 ${page}`);
-      return result;
+      return {
+        success: true,
+        data: customersList,
+        pagination,
+      };
     } catch (error) {
       this.logger.error(`고객 목록 조회 실패: ${error.message}`);
       throw error;
@@ -348,17 +350,61 @@ export class CrmService {
     }
   }
 
-  async getProducts(): Promise<Product[]> {
-    this.logger.log('상품 목록 조회 시작');
+  async getProducts(
+    query: { page?: number; limit?: number; search?: string },
+  ): Promise<ApiResponse<Product[]>> {
+    this.logger.log(`상품 목록 조회 시작: ${JSON.stringify(query)}`);
 
     try {
-      const productsList = await this.db
-        .select()
-        .from(products)
-        .orderBy(asc(products.productName));
+      const page = query.page || 1;
+      const limit = query.limit || 10;
+      const offset = (page - 1) * limit;
 
-      this.logger.log(`상품 목록 조회 완료: ${productsList.length}건`);
-      return productsList;
+      // 검색 조건 구성: productName 또는 issuer LIKE '%search%'
+      const searchTerm = query.search?.trim();
+      const hasSearch = !!(searchTerm && searchTerm.length > 0);
+      const searchFilter = hasSearch
+        ? or(
+            like(products.productName, `%${searchTerm}%`),
+            like(products.issuer, `%${searchTerm}%`),
+          )
+        : undefined;
+
+  let totalResult: { count: number };
+      if (hasSearch && searchFilter) {
+        [totalResult] = await this.db
+          .select({ count: count() })
+          .from(products)
+          .where(searchFilter);
+      } else {
+        [totalResult] = await this.db
+          .select({ count: count() })
+          .from(products);
+      }
+
+      const total = totalResult.count;
+
+      const listBase = this.db.select().from(products);
+      const listWithWhere = hasSearch && searchFilter
+        ? listBase.where(searchFilter)
+        : listBase;
+      const productsList = await listWithWhere
+        .orderBy(asc(products.productName))
+        .limit(limit)
+        .offset(offset);
+
+      const pagination: Pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      };
+
+      return {
+        success: true,
+        data: productsList,
+        pagination,
+      };
     } catch (error) {
       this.logger.error(`상품 목록 조회 실패: ${error.message}`);
       throw error;
@@ -451,45 +497,41 @@ export class CrmService {
   }
 
   async getTransactions(
-    filters: TransactionSearchParams,
-  ): Promise<PaginatedResponse<Transaction>> {
-    this.logger.log(`거래내역 조회 시작: ${JSON.stringify(filters)}`);
+    query: TransactionSearchParams,
+  ): Promise<ApiResponse<Transaction[]>> {
+    this.logger.log(`거래내역 조회 시작: ${JSON.stringify(query)}`);
 
     try {
       const whereConditions: any[] = [];
 
-      if (filters.accountId) {
-        whereConditions.push(eq(transactions.accountId, filters.accountId));
+      if (query.accountId) {
+        whereConditions.push(eq(transactions.accountId, query.accountId));
       }
 
-      if (filters.productId) {
-        whereConditions.push(eq(transactions.productId, filters.productId));
+      if (query.productId) {
+        whereConditions.push(eq(transactions.productId, query.productId));
       }
 
-      if (filters.tradeType) {
-        whereConditions.push(eq(transactions.tradeType, filters.tradeType));
+      if (query.tradeType) {
+        whereConditions.push(eq(transactions.tradeType, query.tradeType));
       }
 
-      if (filters.tradeDateFrom) {
-        whereConditions.push(
-          gte(transactions.tradeDate, filters.tradeDateFrom),
-        );
+      if (query.tradeDateFrom) {
+        whereConditions.push(gte(transactions.tradeDate, query.tradeDateFrom));
       }
 
-      if (filters.tradeDateTo) {
-        whereConditions.push(lte(transactions.tradeDate, filters.tradeDateTo));
+      if (query.tradeDateTo) {
+        whereConditions.push(lte(transactions.tradeDate, query.tradeDateTo));
       }
 
-      const page = filters.page || 1;
-      const limit = filters.limit || 10;
+      const page = query.page || 1;
+      const limit = query.limit || 10;
       const offset = (page - 1) * limit;
 
       const [totalResult] = await this.db
         .select({ count: count() })
         .from(transactions)
-        .where(
-          whereConditions.length > 0 ? and(...whereConditions) : undefined,
-        );
+        .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
 
       const total = totalResult.count;
 
@@ -501,18 +543,18 @@ export class CrmService {
         .limit(limit)
         .offset(offset);
 
-      const result = {
-        data: transactionsList,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
+      const pagination: Pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       };
 
-      this.logger.log(`거래내역 조회 완료: 총 ${total}건, 페이지 ${page}`);
-      return result;
+      return {
+        success: true,
+        data: transactionsList,
+        pagination,
+      };
     } catch (error) {
       this.logger.error(`거래내역 조회 실패: ${error.message}`);
       throw error;
