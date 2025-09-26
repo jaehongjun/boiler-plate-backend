@@ -1,0 +1,3 @@
+ALTER TABLE "tb_calendar_event_history" ALTER COLUMN "event_id" SET DATA TYPE integer;--> statement-breakpoint
+ALTER TABLE "tb_calendar_event_history" ADD CONSTRAINT "tb_calendar_event_history_event_id_tb_calendar_event_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."tb_calendar_event"("event_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "tb_calendar_event" ADD CONSTRAINT "tb_calendar_event_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;

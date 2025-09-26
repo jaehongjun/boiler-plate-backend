@@ -1,37 +1,41 @@
-import { Global, Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { Global, Module } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { drizzle } from "drizzle-orm/postgres-js";
 // Use require to ensure CJS runtime compatibility
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const postgres = require('postgres') as unknown as (
-  cn: string,
-  opts?: unknown,
-) => import('postgres').Sql<any>;
-import * as userSchemas from './schemas/users';
-import * as crmSchemas from './schemas/crm.schema';
+const postgres = require("postgres") as unknown as (
+	cn: string,
+	opts?: unknown,
+) => import("postgres").Sql<Record<string, unknown>>;
+import * as userSchemas from "./schemas/users";
+import * as crmSchemas from "./schemas/crm.schema";
+import * as calendarSchemas from "./schemas/calendar.schema";
 
-export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
+export const DATABASE_CONNECTION = "DATABASE_CONNECTION";
 
 @Global()
 @Module({
-  providers: [
-    {
-      provide: DATABASE_CONNECTION,
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const connectionString = configService.get<string>('DATABASE_URL')!;
+	providers: [
+		{
+			provide: DATABASE_CONNECTION,
+			inject: [ConfigService],
+			useFactory: (configService: ConfigService) => {
+				const connectionString = configService.get<string>("DATABASE_URL");
+				if (!connectionString) {
+					throw new Error("DATABASE_URL is not configured");
+				}
 
-        const client = postgres(connectionString, {
-          ssl: 'require',
-          max: 10,
-        });
+				const client = postgres(connectionString, {
+					ssl: "require",
+					max: 10,
+				});
 
-        return drizzle(client, {
-          schema: { ...userSchemas, ...crmSchemas },
-        });
-      },
-    },
-  ],
-  exports: [DATABASE_CONNECTION],
+				return drizzle(client, {
+					schema: { ...userSchemas, ...crmSchemas, ...calendarSchemas },
+				});
+			},
+		},
+	],
+	exports: [DATABASE_CONNECTION],
 })
 export class DatabaseModule {}

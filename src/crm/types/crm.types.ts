@@ -6,10 +6,10 @@ export interface Customer {
   phoneNo: string | null;
   email: string | null;
   address: string | null;
-  customerGrade: "VIP" | "GENERAL" | "POTENTIAL" | null;
+  customerGrade: 'VIP' | 'GENERAL' | 'POTENTIAL' | null;
   joinDate: string;
   lastContactDate: Date | null;
-  status: "ACTIVE" | "INACTIVE" | null;
+  status: 'ACTIVE' | 'INACTIVE' | null;
   regDate: Date | null;
 }
 
@@ -19,7 +19,7 @@ export interface CreateCustomerDto {
   phoneNo?: string;
   email?: string;
   address?: string;
-  customerGrade?: "VIP" | "GENERAL" | "POTENTIAL";
+  customerGrade?: 'VIP' | 'GENERAL' | 'POTENTIAL';
   joinDate: string;
 }
 
@@ -29,21 +29,21 @@ export interface UpdateCustomerDto {
   phoneNo?: string;
   email?: string;
   address?: string;
-  customerGrade?: "VIP" | "GENERAL" | "POTENTIAL";
+  customerGrade?: 'VIP' | 'GENERAL' | 'POTENTIAL';
   lastContactDate?: Date;
-  status?: "ACTIVE" | "INACTIVE";
+  status?: 'ACTIVE' | 'INACTIVE';
 }
 
 // 상담/문의 이력 관련 타입
 export interface ContactHistory {
   contactId: number;
   customerId: number;
-  contactType: "PHONE" | "VISIT" | "ONLINE" | "EMAIL" | null;
+  contactType: 'PHONE' | 'VISIT' | 'ONLINE' | 'EMAIL' | null;
   contactPurpose?:
-    | "INQUIRY"
-    | "COMPLAINT"
-    | "CONSULTATION"
-    | "INVESTMENT_INQUIRY"
+    | 'INQUIRY'
+    | 'COMPLAINT'
+    | 'CONSULTATION'
+    | 'INVESTMENT_INQUIRY'
     | null;
   contactNote: string | null;
   contactDate: Date | null;
@@ -52,12 +52,12 @@ export interface ContactHistory {
 
 export interface CreateContactHistoryDto {
   customerId: number;
-  contactType?: "PHONE" | "VISIT" | "ONLINE" | "EMAIL";
+  contactType?: 'PHONE' | 'VISIT' | 'ONLINE' | 'EMAIL';
   contactPurpose?:
-    | "INQUIRY"
-    | "COMPLAINT"
-    | "CONSULTATION"
-    | "INVESTMENT_INQUIRY";
+    | 'INQUIRY'
+    | 'COMPLAINT'
+    | 'CONSULTATION'
+    | 'INVESTMENT_INQUIRY';
   contactNote?: string;
   managerId?: number;
 }
@@ -67,47 +67,47 @@ export interface Account {
   accountId: number;
   customerId: number;
   accountNo: string;
-  accountType: "TRUST" | "PENSION" | "CMA" | null;
+  accountType: 'TRUST' | 'PENSION' | 'CMA' | null;
   openDate: string | null;
   balance: string | null;
-  status: "ACTIVE" | "INACTIVE" | "SUSPENDED" | null;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | null;
 }
 
 export interface CreateAccountDto {
   customerId: number;
   accountNo: string;
-  accountType?: "TRUST" | "PENSION" | "CMA";
+  accountType?: 'TRUST' | 'PENSION' | 'CMA';
   openDate?: string;
   balance?: string;
 }
 
 export interface UpdateAccountDto {
-  accountType?: "TRUST" | "PENSION" | "CMA";
+  accountType?: 'TRUST' | 'PENSION' | 'CMA';
   balance?: string;
-  status?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 }
 
 // 투자상품 관련 타입
 export interface Product {
   productId: number;
   productName: string;
-  productType: "STOCK" | "BOND" | "FUND" | "ELS" | "ETF" | null;
-  riskLevel: "HIGH" | "MEDIUM" | "LOW" | null;
+  productType: 'STOCK' | 'BOND' | 'FUND' | 'ELS' | 'ETF' | null;
+  riskLevel: 'HIGH' | 'MEDIUM' | 'LOW' | null;
   issuer: string | null;
   regDate: Date | null;
 }
 
 export interface CreateProductDto {
   productName: string;
-  productType?: "STOCK" | "BOND" | "FUND" | "ELS" | "ETF";
-  riskLevel?: "HIGH" | "MEDIUM" | "LOW";
+  productType?: 'STOCK' | 'BOND' | 'FUND' | 'ELS' | 'ETF';
+  riskLevel?: 'HIGH' | 'MEDIUM' | 'LOW';
   issuer?: string;
 }
 
 export interface UpdateProductDto {
   productName?: string;
-  productType?: "STOCK" | "BOND" | "FUND" | "ELS" | "ETF";
-  riskLevel?: "HIGH" | "MEDIUM" | "LOW";
+  productType?: 'STOCK' | 'BOND' | 'FUND' | 'ELS' | 'ETF';
+  riskLevel?: 'HIGH' | 'MEDIUM' | 'LOW';
   issuer?: string;
 }
 
@@ -116,7 +116,7 @@ export interface Transaction {
   transactionId: number;
   accountId: number;
   productId: number;
-  tradeType: "BUY" | "SELL" | null;
+  tradeType: 'BUY' | 'SELL' | null;
   tradeAmount: string | null;
   tradePrice: string | null;
   tradeDate: Date | null;
@@ -125,7 +125,7 @@ export interface Transaction {
 export interface CreateTransactionDto {
   accountId: number;
   productId: number;
-  tradeType: "BUY" | "SELL";
+  tradeType: 'BUY' | 'SELL';
   tradeAmount: string;
   tradePrice: string;
 }
@@ -141,7 +141,7 @@ export interface Pagination {
 export interface ApiResponse<T> {
   success?: boolean;
   data?: T | undefined;
-  status?: "SUCCESS" | "ERROR";
+  status?: 'SUCCESS' | 'ERROR';
   message?: string;
   pagination?: Pagination;
 }
@@ -154,8 +154,8 @@ export interface PaginatedResponse<T> {
 // 검색 및 필터링 타입
 export interface CustomerSearchParams {
   customerName?: string;
-  customerGrade?: "VIP" | "GENERAL" | "POTENTIAL";
-  status?: "ACTIVE" | "INACTIVE";
+  customerGrade?: 'VIP' | 'GENERAL' | 'POTENTIAL';
+  status?: 'ACTIVE' | 'INACTIVE';
   joinDateFrom?: string;
   joinDateTo?: string;
   page?: number;
@@ -165,7 +165,7 @@ export interface CustomerSearchParams {
 export interface TransactionSearchParams {
   accountId?: number;
   productId?: number;
-  tradeType?: "BUY" | "SELL";
+  tradeType?: 'BUY' | 'SELL';
   tradeDateFrom?: Date;
   tradeDateTo?: Date;
   page?: number;

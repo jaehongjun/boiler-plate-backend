@@ -57,6 +57,27 @@
       "when": 1756703164917,
       "tag": "0007_pink_lady_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1758861997585,
+      "tag": "0008_happy_scalphunter",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1758863279999,
+      "tag": "0009_pink_triathlon",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1758864392954,
+      "tag": "0010_cool_franklin_storm",
+      "breakpoints": true
     }
   ]
 }

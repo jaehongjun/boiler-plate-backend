@@ -250,7 +250,8 @@ export class CrmController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: '상담 이력 조회',
-    description: '상담 이력을 조회합니다. customerId를 지정하면 특정 고객의 이력만 조회됩니다.',
+    description:
+      '상담 이력을 조회합니다. customerId를 지정하면 특정 고객의 이력만 조회됩니다.',
   })
   @ApiResponse({
     status: 200,
@@ -420,8 +421,8 @@ export class CrmController {
     description: '상품 목록 조회 성공',
   })
   async getProducts(
-  @Query(new ValidationPipe({ transform: true, whitelist: true }))
-  query: ProductListQueryDto,
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    query: ProductListQueryDto,
   ): Promise<CrmApiResponse<Product[]>> {
     try {
       const result = await this.crmService.getProducts(query);

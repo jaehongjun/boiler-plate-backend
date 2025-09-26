@@ -1,5 +1,16 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { eq, and, like, gte, lte, desc, asc, count, sum, or } from 'drizzle-orm';
+import {
+  eq,
+  and,
+  like,
+  gte,
+  lte,
+  desc,
+  asc,
+  count,
+  sum,
+  or,
+} from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { DATABASE_CONNECTION } from '../../database/database.module';
 import {
@@ -350,9 +361,11 @@ export class CrmService {
     }
   }
 
-  async getProducts(
-    query: { page?: number; limit?: number; search?: string },
-  ): Promise<ApiResponse<Product[]>> {
+  async getProducts(query: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<ApiResponse<Product[]>> {
     this.logger.log(`상품 목록 조회 시작: ${JSON.stringify(query)}`);
 
     try {
@@ -370,24 +383,21 @@ export class CrmService {
           )
         : undefined;
 
-  let totalResult: { count: number };
+      let totalResult: { count: number };
       if (hasSearch && searchFilter) {
         [totalResult] = await this.db
           .select({ count: count() })
           .from(products)
           .where(searchFilter);
       } else {
-        [totalResult] = await this.db
-          .select({ count: count() })
-          .from(products);
+        [totalResult] = await this.db.select({ count: count() }).from(products);
       }
 
       const total = totalResult.count;
 
       const listBase = this.db.select().from(products);
-      const listWithWhere = hasSearch && searchFilter
-        ? listBase.where(searchFilter)
-        : listBase;
+      const listWithWhere =
+        hasSearch && searchFilter ? listBase.where(searchFilter) : listBase;
       const productsList = await listWithWhere
         .orderBy(asc(products.productName))
         .limit(limit)
@@ -531,7 +541,9 @@ export class CrmService {
       const [totalResult] = await this.db
         .select({ count: count() })
         .from(transactions)
-        .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+        .where(
+          whereConditions.length > 0 ? and(...whereConditions) : undefined,
+        );
 
       const total = totalResult.count;
 
