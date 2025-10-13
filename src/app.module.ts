@@ -6,6 +6,8 @@ import { AuthModule } from "./auth/auth.module";
 import { PortfolioModule } from "./portfolio/portfolio.module";
 import { CrmModule } from "./crm/crm.module";
 import { CalendarModule } from "./calendar/calendar.module";
+import { FilesModule } from "./files/files.module";
+import { IrModule } from "./ir/ir.module";
 
 @Module({
 	imports: [
@@ -23,6 +25,8 @@ import { CalendarModule } from "./calendar/calendar.module";
 		PortfolioModule,
 		CrmModule,
 		CalendarModule,
+		FilesModule,
+		IrModule,
 	],
 })
 export class AppModule {}
