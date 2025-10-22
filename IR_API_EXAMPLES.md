@@ -325,6 +325,20 @@ curl -X PATCH http://localhost:8080/api/ir/activities/act-1729584000000-abc123 \
 }
 ```
 
+You can also update dates. The API accepts either `startDatetime`/`endDatetime` or `startISO`/`endISO` (ISO8601):
+
+```bash
+curl -X PATCH http://localhost:8080/api/ir/activities/act-1729584000000-abc123 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "startISO": "2025-10-14T15:30:00.000Z",
+    "endISO": "2025-11-06T15:30:00.000Z"
+  }'
+```
+
+Note: To clear `endDatetime`, send `endDatetime` explicitly as `null` is not supported yet; prefer providing a concrete date or omit the field to keep it unchanged.
+
 ## 6. Update Activity Status
 
 **PATCH** `/api/ir/activities/:id/status`
