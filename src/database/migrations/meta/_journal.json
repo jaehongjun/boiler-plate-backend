@@ -78,6 +78,13 @@
       "when": 1758864392954,
       "tag": "0010_cool_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1761111985600,
+      "tag": "0011_smart_vengeance",
+      "breakpoints": true
     }
   ]
 }

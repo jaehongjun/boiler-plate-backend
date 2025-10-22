@@ -49,7 +49,6 @@ export class FilesController {
   @UseGuards(OptionalJwtAuthGuard)
   @Post('uploads')
   @UseInterceptors(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
     FileInterceptor('file', {
       storage: memoryStorage(),
       limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
@@ -62,7 +61,7 @@ export class FilesController {
     if (!isMulterFile(file)) throw new BadRequestException('Invalid file');
     const overrideName =
       typeof body?.originalFilename === 'string' && body.originalFilename.trim()
-        ? (body.originalFilename as string)
+        ? body.originalFilename
         : undefined;
     const safeName = overrideName ?? decodeLatin1ToUtf8(file.originalname);
     return await this.filesService.uploadBuffer({
@@ -78,7 +77,6 @@ export class FilesController {
   @UseGuards(OptionalJwtAuthGuard)
   @Post('files/upload')
   @UseInterceptors(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
     FileInterceptor('file', {
       storage: memoryStorage(),
       limits: { fileSize: 50 * 1024 * 1024 },
@@ -91,7 +89,7 @@ export class FilesController {
     if (!isMulterFile(file)) throw new BadRequestException('Invalid file');
     const overrideName =
       typeof body?.originalFilename === 'string' && body.originalFilename.trim()
-        ? (body.originalFilename as string)
+        ? body.originalFilename
         : undefined;
     const safeName = overrideName ?? decodeLatin1ToUtf8(file.originalname);
     return await this.filesService.uploadBuffer({

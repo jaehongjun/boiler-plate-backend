@@ -10,6 +10,7 @@ const postgres = require('postgres') as unknown as (
 import * as userSchemas from './schemas/users';
 import * as crmSchemas from './schemas/crm.schema';
 import * as calendarSchemas from './schemas/calendar.schema';
+import * as irSchemas from './schemas/ir.schema';
 
 export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
 
@@ -31,7 +32,12 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
         });
 
         return drizzle(client, {
-          schema: { ...userSchemas, ...crmSchemas, ...calendarSchemas },
+          schema: {
+            ...userSchemas,
+            ...crmSchemas,
+            ...calendarSchemas,
+            ...irSchemas,
+          },
         });
       },
     },

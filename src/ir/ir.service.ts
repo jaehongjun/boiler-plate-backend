@@ -1,33 +1,597 @@
-import { Injectable } from "@nestjs/common";
-
-export interface Attachment {
-	id?: string;
-	filename: string;
-	url: string;
-}
-
-export interface IrActivity {
-	id: number;
-	title: string;
-	type: string;
-	meetingAt?: string;
-	place?: string;
-	broker?: string;
-	brokerPerson?: string;
-	investor?: string;
-	investorPerson?: string;
-	attachments: Attachment[];
-}
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { DATABASE_CONNECTION } from '../database/database.module';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import {
+  irActivities,
+  irSubActivities,
+  irActivityKbParticipants,
+  irActivityVisitors,
+  irActivityKeywords,
+  irActivityAttachments,
+  irActivityLogs,
+} from '../database/schemas/ir.schema';
+import { users } from '../database/schemas/users';
+import {
+  CreateIrActivityDto,
+  UpdateIrActivityDto,
+  UpdateIrActivityStatusDto,
+  QueryIrActivitiesDto,
+} from './dto';
+import {
+  IrActivityEntityResponse,
+  IrCalendarEventResponse,
+  IrTimelineActivityResponse,
+  IrActivityLogResponse,
+  IrActivityAttachmentResponse,
+  IrActivitySubActivityResponse,
+} from './types/ir-activity.types';
 
 @Injectable()
 export class IrService {
-	private seq = 100;
-	private items: IrActivity[] = [];
+  constructor(
+    @Inject(DATABASE_CONNECTION)
+    private readonly db: PostgresJsDatabase<any>,
+  ) {}
 
-	create(data: Omit<IrActivity, "id">): IrActivity {
-		const id = ++this.seq;
-		const item: IrActivity = { id, ...data };
-		this.items.unshift(item);
-		return item;
-	}
+  /**
+   * Generate a unique ID for IR activities
+   */
+  private generateId(prefix: string): string {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 9);
+    return `${prefix}-${timestamp}-${random}`;
+  }
+
+  /**
+   * Create a new IR activity
+   */
+  async create(
+    createDto: CreateIrActivityDto,
+    userId: string,
+  ): Promise<IrActivityEntityResponse> {
+    const activityId = this.generateId('act');
+
+    // Create main activity
+    await this.db.insert(irActivities).values({
+      id: activityId,
+      title: createDto.title,
+      startDatetime: new Date(createDto.startDatetime),
+      endDatetime: createDto.endDatetime
+        ? new Date(createDto.endDatetime)
+        : undefined,
+      status: createDto.status || '예정',
+      allDay: createDto.allDay,
+      category: createDto.category,
+      location: createDto.location,
+      description: createDto.description,
+      typePrimary: createDto.typePrimary,
+      typeSecondary: createDto.typeSecondary,
+      memo: createDto.memo,
+      contentHtml: createDto.contentHtml,
+      ownerId: createDto.ownerId,
+    });
+
+    // Add KB participants
+    if (createDto.kbParticipants && createDto.kbParticipants.length > 0) {
+      await this.db.insert(irActivityKbParticipants).values(
+        createDto.kbParticipants.map((p) => ({
+          activityId,
+          userId: p.userId,
+          role: p.role,
+        })),
+      );
+    }
+
+    // Add visitors
+    if (createDto.visitors && createDto.visitors.length > 0) {
+      await this.db.insert(irActivityVisitors).values(
+        createDto.visitors.map((v) => ({
+          activityId,
+          visitorName: v.visitorName,
+          visitorType: v.visitorType,
+          company: v.company,
+        })),
+      );
+    }
+
+    // Add keywords
+    if (createDto.keywords && createDto.keywords.length > 0) {
+      await this.db.insert(irActivityKeywords).values(
+        createDto.keywords.slice(0, 5).map((keyword, index) => ({
+          activityId,
+          keyword,
+          displayOrder: index,
+        })),
+      );
+    }
+
+    // Add sub-activities
+    if (createDto.subActivities && createDto.subActivities.length > 0) {
+      await this.db.insert(irSubActivities).values(
+        createDto.subActivities.map((sub, index) => ({
+          id: this.generateId('sub'),
+          parentActivityId: activityId,
+          title: sub.title,
+          ownerId: sub.ownerId,
+          status: sub.status || '예정',
+          startDatetime: sub.startDatetime
+            ? new Date(sub.startDatetime)
+            : undefined,
+          endDatetime: sub.endDatetime ? new Date(sub.endDatetime) : undefined,
+          displayOrder: index,
+        })),
+      );
+    }
+
+    // Create activity log
+    const user = await (this.db.query as any).users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    await this.db.insert(irActivityLogs).values({
+      id: this.generateId('log'),
+      activityId,
+      logType: 'create',
+      userId,
+      userName: user?.name || 'Unknown',
+      message: `활동 생성: ${createDto.title}`,
+    });
+
+    // Return the created activity
+    return this.findOne(activityId);
+  }
+
+  /**
+   * Get all activities for calendar view
+   */
+  async getCalendarEvents(
+    query: QueryIrActivitiesDto,
+  ): Promise<{ events: IrCalendarEventResponse[] }> {
+    const startDate = new Date(query.start);
+    const endDate = new Date(query.end);
+
+    const conditions = [
+      gte(irActivities.startDatetime, startDate),
+      lte(irActivities.startDatetime, endDate),
+    ];
+
+    if (query.category) {
+      conditions.push(eq(irActivities.category, query.category));
+    }
+
+    if (query.status && query.status !== '전체') {
+      conditions.push(eq(irActivities.status, query.status));
+    }
+
+    const activities = await (this.db.query as any).irActivities.findMany({
+      where: and(...conditions),
+      orderBy: (activities, { asc }) => [asc(activities.startDatetime)],
+    });
+
+    const events: IrCalendarEventResponse[] = activities.map((activity) => ({
+      id: activity.id,
+      title: activity.title,
+      start: activity.startDatetime.toISOString(),
+      end: activity.endDatetime?.toISOString(),
+      allDay: activity.allDay || false,
+      category: activity.category,
+      location: activity.location || undefined,
+      description: activity.description || undefined,
+    }));
+
+    return { events };
+  }
+
+  /**
+   * Get all activities for timeline view
+   */
+  async getTimelineActivities(
+    query: QueryIrActivitiesDto,
+  ): Promise<{ activities: IrTimelineActivityResponse[] }> {
+    const startDate = new Date(query.start);
+    const endDate = new Date(query.end);
+
+    const conditions = [
+      gte(irActivities.startDatetime, startDate),
+      lte(irActivities.startDatetime, endDate),
+    ];
+
+    if (query.status && query.status !== '전체') {
+      conditions.push(eq(irActivities.status, query.status));
+    }
+
+    const activities = await (this.db.query as any).irActivities.findMany({
+      where: and(...conditions),
+      with: {
+        subActivities: {
+          with: {
+            owner: true,
+          },
+          orderBy: (subs, { asc }) => [asc(subs.displayOrder)],
+        },
+      },
+      orderBy: (activities, { asc }) => [asc(activities.startDatetime)],
+    });
+
+    const timelineActivities: IrTimelineActivityResponse[] = activities.map(
+      (activity) => ({
+        id: activity.id,
+        title: activity.title,
+        startISO: activity.startDatetime.toISOString(),
+        endISO:
+          activity.endDatetime?.toISOString() ||
+          activity.startDatetime.toISOString(),
+        status: activity.status,
+        subActivities: activity.subActivities.map((sub) => ({
+          id: sub.id,
+          title: sub.title,
+          owner: sub.owner?.name,
+          status: sub.status,
+          startDatetime: sub.startDatetime?.toISOString(),
+          endDatetime: sub.endDatetime?.toISOString(),
+        })),
+      }),
+    );
+
+    return { activities: timelineActivities };
+  }
+
+  /**
+   * Get full activity details by ID
+   */
+  async findOne(id: string): Promise<IrActivityEntityResponse> {
+    const activity = await (this.db.query as any).irActivities.findFirst({
+      where: eq(irActivities.id, id),
+      with: {
+        owner: true,
+        subActivities: {
+          with: {
+            owner: true,
+          },
+          orderBy: (subs, { asc }) => [asc(subs.displayOrder)],
+        },
+        kbParticipants: {
+          with: {
+            user: true,
+          },
+        },
+        visitors: true,
+        keywords: {
+          orderBy: (keywords, { asc }) => [asc(keywords.displayOrder)],
+        },
+        attachments: {
+          with: {
+            uploadedByUser: true,
+          },
+        },
+        logs: {
+          orderBy: (logs, { desc }) => [desc(logs.createdAt)],
+          limit: 200,
+        },
+      },
+    });
+
+    if (!activity) {
+      throw new NotFoundException(`IR Activity with ID ${id} not found`);
+    }
+
+    // Transform to response format
+    const response: IrActivityEntityResponse = {
+      id: activity.id,
+      title: activity.title,
+      startISO: activity.startDatetime.toISOString(),
+      endISO: activity.endDatetime?.toISOString(),
+      status: activity.status,
+      allDay: activity.allDay || false,
+      category: activity.category,
+      location: activity.location || undefined,
+      description: activity.description || undefined,
+      typePrimary: activity.typePrimary,
+      typeSecondary: activity.typeSecondary || undefined,
+      kbs: activity.kbParticipants.map((p) => p.user.name),
+      visitors: activity.visitors.map((v) => v.visitorName),
+      memo: activity.memo || undefined,
+      contentHtml: activity.contentHtml || undefined,
+      keywords: activity.keywords.map((k) => k.keyword),
+      attachments: activity.attachments.map((a) => ({
+        id: a.id,
+        name: a.fileName,
+        url: a.storageUrl || undefined,
+        size: a.fileSize || undefined,
+        uploadedAtISO: a.uploadedAt.toISOString(),
+        uploadedBy: a.uploadedByUser?.name,
+        mime: a.mimeType || undefined,
+      })),
+      files: activity.attachments.map((a) => ({
+        id: a.id,
+        name: a.fileName,
+        url: a.storageUrl || undefined,
+        size: a.fileSize || undefined,
+        uploadedAtISO: a.uploadedAt.toISOString(),
+        uploadedBy: a.uploadedByUser?.name,
+        mime: a.mimeType || undefined,
+      })),
+      subActivities: activity.subActivities.map((sub) => ({
+        id: sub.id,
+        title: sub.title,
+        owner: sub.owner?.name,
+        status: sub.status,
+        startDatetime: sub.startDatetime?.toISOString(),
+        endDatetime: sub.endDatetime?.toISOString(),
+      })),
+      owner: activity.owner?.name,
+      investors: activity.visitors
+        .filter((v) => v.visitorType === 'investor')
+        .map((v) => v.visitorName),
+      brokers: activity.visitors
+        .filter((v) => v.visitorType === 'broker')
+        .map((v) => v.visitorName),
+      logs: activity.logs.map((log) => ({
+        id: log.id,
+        type: log.logType,
+        user: log.userName,
+        message: log.message,
+        createdAtISO: log.createdAt.toISOString(),
+        oldValue: log.oldValue || undefined,
+        newValue: log.newValue || undefined,
+      })),
+      createdAtISO: activity.createdAt.toISOString(),
+      updatedAtISO: activity.updatedAt.toISOString(),
+      resolvedAtISO: activity.resolvedAt?.toISOString(),
+    };
+
+    return response;
+  }
+
+  /**
+   * Update an IR activity
+   */
+  async update(
+    id: string,
+    updateDto: UpdateIrActivityDto,
+    userId: string,
+  ): Promise<IrActivityEntityResponse> {
+    // Check if activity exists
+    const existing = await (this.db.query as any).irActivities.findFirst({
+      where: eq(irActivities.id, id),
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`IR Activity with ID ${id} not found`);
+    }
+
+    // Update main activity
+    const updateData: any = {};
+    if (updateDto.title !== undefined) updateData.title = updateDto.title;
+    if (updateDto.startDatetime !== undefined) {
+      updateData.startDatetime = new Date(updateDto.startDatetime);
+    }
+    if (updateDto.endDatetime !== undefined) {
+      updateData.endDatetime = updateDto.endDatetime
+        ? new Date(updateDto.endDatetime)
+        : null;
+    }
+    if (updateDto.status !== undefined) updateData.status = updateDto.status;
+    if (updateDto.allDay !== undefined) updateData.allDay = updateDto.allDay;
+    if (updateDto.category !== undefined)
+      updateData.category = updateDto.category;
+    if (updateDto.location !== undefined)
+      updateData.location = updateDto.location;
+    if (updateDto.description !== undefined)
+      updateData.description = updateDto.description;
+    if (updateDto.typePrimary !== undefined)
+      updateData.typePrimary = updateDto.typePrimary;
+    if (updateDto.typeSecondary !== undefined) {
+      updateData.typeSecondary = updateDto.typeSecondary;
+    }
+    if (updateDto.memo !== undefined) updateData.memo = updateDto.memo;
+    if (updateDto.contentHtml !== undefined)
+      updateData.contentHtml = updateDto.contentHtml;
+    if (updateDto.ownerId !== undefined) updateData.ownerId = updateDto.ownerId;
+
+    updateData.updatedAt = new Date();
+
+    await this.db
+      .update(irActivities)
+      .set(updateData)
+      .where(eq(irActivities.id, id));
+
+    // Update KB participants if provided
+    if (updateDto.kbParticipants !== undefined) {
+      await this.db
+        .delete(irActivityKbParticipants)
+        .where(eq(irActivityKbParticipants.activityId, id));
+      if (updateDto.kbParticipants.length > 0) {
+        await this.db.insert(irActivityKbParticipants).values(
+          updateDto.kbParticipants.map((p) => ({
+            activityId: id,
+            userId: p.userId,
+            role: p.role,
+          })),
+        );
+      }
+    }
+
+    // Update visitors if provided
+    if (updateDto.visitors !== undefined) {
+      await this.db
+        .delete(irActivityVisitors)
+        .where(eq(irActivityVisitors.activityId, id));
+      if (updateDto.visitors.length > 0) {
+        await this.db.insert(irActivityVisitors).values(
+          updateDto.visitors.map((v) => ({
+            activityId: id,
+            visitorName: v.visitorName,
+            visitorType: v.visitorType,
+            company: v.company,
+          })),
+        );
+      }
+    }
+
+    // Update keywords if provided
+    if (updateDto.keywords !== undefined) {
+      await this.db
+        .delete(irActivityKeywords)
+        .where(eq(irActivityKeywords.activityId, id));
+      if (updateDto.keywords.length > 0) {
+        await this.db.insert(irActivityKeywords).values(
+          updateDto.keywords.slice(0, 5).map((keyword, index) => ({
+            activityId: id,
+            keyword,
+            displayOrder: index,
+          })),
+        );
+      }
+    }
+
+    // Create update log
+    const user = await (this.db.query as any).users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    await this.db.insert(irActivityLogs).values({
+      id: this.generateId('log'),
+      activityId: id,
+      logType: 'update',
+      userId,
+      userName: user?.name || 'Unknown',
+      message: `활동 수정`,
+    });
+
+    return this.findOne(id);
+  }
+
+  /**
+   * Update activity status
+   */
+  async updateStatus(
+    id: string,
+    statusDto: UpdateIrActivityStatusDto,
+    userId: string,
+  ): Promise<IrActivityEntityResponse> {
+    const existing = await (this.db.query as any).irActivities.findFirst({
+      where: eq(irActivities.id, id),
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`IR Activity with ID ${id} not found`);
+    }
+
+    const updateData: any = {
+      status: statusDto.status,
+      updatedAt: new Date(),
+    };
+
+    // Set resolvedAt if status is completed
+    if (statusDto.status === '완료') {
+      updateData.resolvedAt = new Date();
+    }
+
+    await this.db
+      .update(irActivities)
+      .set(updateData)
+      .where(eq(irActivities.id, id));
+
+    // Create status change log
+    const user = await (this.db.query as any).users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    await this.db.insert(irActivityLogs).values({
+      id: this.generateId('log'),
+      activityId: id,
+      logType: 'status',
+      userId,
+      userName: user?.name || 'Unknown',
+      message: `상태 변경: ${existing.status} → ${statusDto.status}`,
+      oldValue: existing.status,
+      newValue: statusDto.status,
+    });
+
+    return this.findOne(id);
+  }
+
+  /**
+   * Delete an IR activity
+   */
+  async remove(id: string, userId: string): Promise<void> {
+    const existing = await (this.db.query as any).irActivities.findFirst({
+      where: eq(irActivities.id, id),
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`IR Activity with ID ${id} not found`);
+    }
+
+    await this.db.delete(irActivities).where(eq(irActivities.id, id));
+  }
+
+  /**
+   * Add sub-activity to an activity
+   */
+  async addSubActivity(
+    activityId: string,
+    title: string,
+    ownerId: string | undefined,
+    status: '예정' | '진행중' | '완료' | '중단',
+    userId: string,
+  ): Promise<IrActivitySubActivityResponse> {
+    const activity = await (this.db.query as any).irActivities.findFirst({
+      where: eq(irActivities.id, activityId),
+    });
+
+    if (!activity) {
+      throw new NotFoundException(
+        `IR Activity with ID ${activityId} not found`,
+      );
+    }
+
+    // Get the next display order
+    const existingSubs = await (this.db.query as any).irSubActivities.findMany({
+      where: eq(irSubActivities.parentActivityId, activityId),
+    });
+
+    const subId = this.generateId('sub');
+
+    await this.db.insert(irSubActivities).values({
+      id: subId,
+      parentActivityId: activityId,
+      title,
+      ownerId,
+      status,
+      displayOrder: existingSubs.length,
+    });
+
+    // Create log
+    const user = await (this.db.query as any).users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    await this.db.insert(irActivityLogs).values({
+      id: this.generateId('log'),
+      activityId,
+      logType: 'sub_activity',
+      userId,
+      userName: user?.name || 'Unknown',
+      message: `세부 활동 추가: ${title}`,
+    });
+
+    const created = await (this.db.query as any).irSubActivities.findFirst({
+      where: eq(irSubActivities.id, subId),
+      with: {
+        owner: true,
+      },
+    });
+
+    return {
+      id: created!.id,
+      title: created!.title,
+      owner: created!.owner?.name,
+      status: created!.status,
+      startDatetime: created!.startDatetime?.toISOString(),
+      endDatetime: created!.endDatetime?.toISOString(),
+    };
+  }
 }

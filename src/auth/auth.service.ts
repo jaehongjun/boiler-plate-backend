@@ -129,21 +129,33 @@ export class AuthService {
 
   private signAccessToken(payload: JwtPayload): string {
     const secret = this.configService.get<string>('JWT_SECRET');
-    const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN', '7d');
+    const expiresInConf = this.configService.get<string>(
+      'JWT_EXPIRES_IN',
+      '7d',
+    );
     if (!secret) throw new Error('JWT_SECRET is not configured');
-    return this.jwtService.sign(payload, { secret, expiresIn });
+    const expiresInSeconds = Math.floor(
+      this.parseDurationMs(expiresInConf) / 1000,
+    );
+    return this.jwtService.sign(payload, {
+      secret,
+      expiresIn: expiresInSeconds,
+    });
   }
 
   private signRefreshToken(payload: JwtPayload): string {
     const secret = this.configService.get<string>('JWT_REFRESH_SECRET');
-    const expiresIn = this.configService.get<string>(
+    const expiresInConf = this.configService.get<string>(
       'JWT_REFRESH_EXPIRES_IN',
       '14d',
     );
     if (!secret) throw new Error('JWT_REFRESH_SECRET is not configured');
+    const expiresInSeconds = Math.floor(
+      this.parseDurationMs(expiresInConf) / 1000,
+    );
     return this.jwtService.sign({ ...payload, typ: 'refresh' } as JwtPayload, {
       secret,
-      expiresIn,
+      expiresIn: expiresInSeconds,
     });
   }
 

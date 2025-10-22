@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "node --max-old-space-size=512 ./node_modules/.bin/nest build",
+  "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "NODE_ENV=production nest start",
     "start:dev": "NODE_ENV=development nest start --watch",
@@ -43,7 +43,7 @@
     "class-validator": "^0.14.2",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
-    "drizzle-kit": "^0.31.4",
+    "drizzle-kit": "^0.31.5",
     "drizzle-orm": "^0.44.4",
     "drizzle-zod": "^0.8.3",
     "helmet": "^8.1.0",

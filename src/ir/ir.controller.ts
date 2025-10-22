@@ -1,52 +1,194 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { z } from 'zod';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
-import { IrService, type IrActivity } from './ir.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
+import { IrService } from './ir.service';
+import {
+  createIrActivitySchema,
+  updateIrActivitySchema,
+  updateIrActivityStatusSchema,
+  queryIrActivitiesSchema,
+  CreateIrActivityDto,
+  UpdateIrActivityDto,
+  UpdateIrActivityStatusDto,
+  QueryIrActivitiesDto,
+} from './dto';
+import { z } from 'zod';
 
-const AttachmentSchema = z.object({
-  id: z.string().optional(),
-  filename: z.string().min(1),
-  url: z.string().url(),
-});
-
-const CreateIrSchema = z.object({
-  title: z.string().min(1),
-  type: z.string().min(1),
-  meetingAt: z.string().datetime().optional(),
-  place: z.string().optional(),
-  broker: z.string().optional(),
-  brokerPerson: z.string().optional(),
-  investor: z.string().optional(),
-  investorPerson: z.string().optional(),
-  attachments: z.array(AttachmentSchema).default([]),
-});
-
-type CreateIrDto = z.infer<typeof CreateIrSchema>;
-
-@Controller()
+@Controller('ir')
+@UseGuards(JwtAuthGuard)
 export class IrController {
   constructor(private readonly irService: IrService) {}
 
-  @UseGuards(OptionalJwtAuthGuard)
-  @Post('ir/activities')
-  createAtRoot(@Body(new ZodValidationPipe(CreateIrSchema)) body: CreateIrDto) {
-    const created: IrActivity = this.irService.create({
-      title: body.title,
-      type: body.type,
-      meetingAt: body.meetingAt,
-      place: body.place,
-      broker: body.broker,
-      brokerPerson: body.brokerPerson,
-      investor: body.investor,
-      investorPerson: body.investorPerson,
-      attachments: body.attachments,
-    });
+  /**
+   * GET /api/ir/calendar/events
+   * Get IR activities for calendar view
+   */
+  @Get('calendar/events')
+  async getCalendarEvents(
+    @Query(new ZodValidationPipe(queryIrActivitiesSchema))
+    query: QueryIrActivitiesDto,
+  ) {
+    const result = await this.irService.getCalendarEvents(query);
     return {
       success: true,
-      data: created,
-      message: 'CREATED',
-    } as const;
+      data: result,
+      message: 'Calendar events retrieved successfully',
+    };
   }
-  // '/api/ir/activities' 경로는 필요 시 별도 추가 가능. 기본은 루트 '/ir/activities' 사용.
+
+  /**
+   * GET /api/ir/timeline/activities
+   * Get IR activities for timeline view
+   */
+  @Get('timeline/activities')
+  async getTimelineActivities(
+    @Query(new ZodValidationPipe(queryIrActivitiesSchema))
+    query: QueryIrActivitiesDto,
+  ) {
+    const result = await this.irService.getTimelineActivities(query);
+    return {
+      success: true,
+      data: result,
+      message: 'Timeline activities retrieved successfully',
+    };
+  }
+
+  /**
+   * GET /api/ir/activities/:id
+   * Get full IR activity details by ID
+   */
+  @Get('activities/:id')
+  async getActivityById(@Param('id') id: string) {
+    const activity = await this.irService.findOne(id);
+    return {
+      success: true,
+      data: activity,
+      message: 'Activity retrieved successfully',
+    };
+  }
+
+  /**
+   * POST /api/ir/activities
+   * Create a new IR activity
+   */
+  @Post('activities')
+  @HttpCode(HttpStatus.CREATED)
+  async createActivity(
+    @Body(new ZodValidationPipe(createIrActivitySchema))
+    createDto: CreateIrActivityDto,
+    @CurrentUserId() userId: string,
+  ) {
+    const activity = await this.irService.create(createDto, userId);
+    return {
+      success: true,
+      data: activity,
+      message: 'Activity created successfully',
+    };
+  }
+
+  /**
+   * PATCH /api/ir/activities/:id
+   * Update an IR activity (partial update)
+   */
+  @Patch('activities/:id')
+  async updateActivity(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateIrActivitySchema))
+    updateDto: UpdateIrActivityDto,
+    @CurrentUserId() userId: string,
+  ) {
+    const activity = await this.irService.update(id, updateDto, userId);
+    return {
+      success: true,
+      data: activity,
+      message: 'Activity updated successfully',
+    };
+  }
+
+  /**
+   * PATCH /api/ir/activities/:id/status
+   * Update activity status
+   */
+  @Patch('activities/:id/status')
+  async updateActivityStatus(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateIrActivityStatusSchema))
+    statusDto: UpdateIrActivityStatusDto,
+    @CurrentUserId() userId: string,
+  ) {
+    const activity = await this.irService.updateStatus(id, statusDto, userId);
+    return {
+      success: true,
+      data: activity,
+      message: 'Activity status updated successfully',
+    };
+  }
+
+  /**
+   * DELETE /api/ir/activities/:id
+   * Delete an IR activity
+   */
+  @Delete('activities/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteActivity(
+    @Param('id') id: string,
+    @CurrentUserId() userId: string,
+  ) {
+    await this.irService.remove(id, userId);
+  }
+
+  /**
+   * POST /api/ir/activities/:id/sub-activities
+   * Add a sub-activity to an IR activity
+   */
+  @Post('activities/:id/sub-activities')
+  @HttpCode(HttpStatus.CREATED)
+  async addSubActivity(
+    @Param('id') activityId: string,
+    @Body(
+      new ZodValidationPipe(
+        z.object({
+          title: z.string().min(1).max(255),
+          ownerId: z.string().uuid().optional(),
+          status: z.enum(['예정', '진행중', '완료', '중단']).default('예정'),
+        }),
+      ),
+    )
+    body: {
+      title: string;
+      ownerId?: string;
+      status: '예정' | '진행중' | '완료' | '중단';
+    },
+    @CurrentUserId() userId: string,
+  ) {
+    const subActivity = await this.irService.addSubActivity(
+      activityId,
+      body.title,
+      body.ownerId,
+      body.status,
+      userId,
+    );
+    return {
+      success: true,
+      data: subActivity,
+      message: 'Sub-activity added successfully',
+    };
+  }
+
+  // TODO: File upload endpoint can be added here
+  // POST /api/ir/activities/:id/attachments
+  // Requires multipart/form-data handling with file validation
 }
