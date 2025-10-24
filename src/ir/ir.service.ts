@@ -19,6 +19,7 @@ import {
   CreateIrActivityDto,
   CreateIrSubActivityDto,
   UpdateIrActivityDto,
+  UpdateIrSubActivityDto,
   UpdateIrActivityStatusDto,
   QueryIrActivitiesDto,
 } from './dto';
@@ -26,8 +27,6 @@ import {
   IrActivityEntityResponse,
   IrCalendarEventResponse,
   IrTimelineActivityResponse,
-  IrActivityLogResponse,
-  IrActivityAttachmentResponse,
   IrActivitySubActivityResponse,
 } from './types/ir-activity.types';
 
@@ -113,7 +112,7 @@ export class IrService {
     // Add sub-activities
     if (createDto.subActivities && createDto.subActivities.length > 0) {
       for (let i = 0; i < createDto.subActivities.length; i++) {
-        const sub = createDto.subActivities[i] as CreateIrSubActivityDto;
+        const sub = createDto.subActivities[i];
         const subId = this.generateId('sub');
 
         // Try extended insert first; fallback to legacy columns if migration not applied
@@ -140,13 +139,10 @@ export class IrService {
             contentHtml: sub.contentHtml,
             displayOrder: i,
           });
-        } catch (e: any) {
+        } catch (e: unknown) {
           // Likely due to missing columns; insert minimal columns only
-          if (
-            typeof e?.message === 'string' &&
-            e.message.includes('column') &&
-            e.message.includes('does not exist')
-          ) {
+          const msg = e instanceof Error ? e.message : String(e);
+          if (msg.includes('column') && msg.includes('does not exist')) {
             await this.db.insert(irSubActivities).values({
               id: subId,
               parentActivityId: activityId,
@@ -565,6 +561,133 @@ export class IrService {
             displayOrder: index,
           })),
         );
+      }
+    }
+
+    // Update sub-activities if provided
+    if (updateDto.subActivities !== undefined) {
+      for (const sub of updateDto.subActivities as UpdateIrSubActivityDto[]) {
+        if (!sub || !sub.id) continue;
+
+        const subUpdate: any = {};
+        if (sub.title !== undefined) subUpdate.title = sub.title;
+        if (sub.ownerId !== undefined) subUpdate.ownerId = sub.ownerId;
+        if (sub.status !== undefined) subUpdate.status = sub.status;
+        if (sub.startDatetime !== undefined)
+          subUpdate.startDatetime = sub.startDatetime
+            ? new Date(sub.startDatetime)
+            : null;
+        if (sub.endDatetime !== undefined)
+          subUpdate.endDatetime = sub.endDatetime
+            ? new Date(sub.endDatetime)
+            : null;
+
+        // Extended optional fields (safe if migration applied)
+        if (sub.allDay !== undefined) subUpdate.allDay = sub.allDay;
+        if (sub.category !== undefined) subUpdate.category = sub.category;
+        if (sub.location !== undefined) subUpdate.location = sub.location;
+        if (sub.description !== undefined)
+          subUpdate.description = sub.description;
+        if (sub.typePrimary !== undefined)
+          subUpdate.typePrimary = sub.typePrimary;
+        if (sub.typeSecondary !== undefined)
+          subUpdate.typeSecondary = sub.typeSecondary;
+        if (sub.memo !== undefined) subUpdate.memo = sub.memo;
+        if (sub.contentHtml !== undefined)
+          subUpdate.contentHtml = sub.contentHtml;
+
+        subUpdate.updatedAt = new Date();
+
+        // Attempt extended update; fallback to legacy columns if needed
+        try {
+          await this.db
+            .update(irSubActivities)
+            .set(subUpdate)
+            .where(eq(irSubActivities.id, sub.id));
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          if (msg.includes('column') && msg.includes('does not exist')) {
+            const legacyUpdate: any = {
+              updatedAt: subUpdate.updatedAt,
+            };
+            if (sub.title !== undefined) legacyUpdate.title = sub.title;
+            if (sub.ownerId !== undefined) legacyUpdate.ownerId = sub.ownerId;
+            if (sub.status !== undefined) legacyUpdate.status = sub.status;
+            if (sub.startDatetime !== undefined)
+              legacyUpdate.startDatetime = sub.startDatetime
+                ? new Date(sub.startDatetime)
+                : null;
+            if (sub.endDatetime !== undefined)
+              legacyUpdate.endDatetime = sub.endDatetime
+                ? new Date(sub.endDatetime)
+                : null;
+            await this.db
+              .update(irSubActivities)
+              .set(legacyUpdate)
+              .where(eq(irSubActivities.id, sub.id));
+          } else {
+            throw e;
+          }
+        }
+
+        // Relations: replace if arrays provided
+        if (sub.kbParticipants !== undefined) {
+          try {
+            await this.db
+              .delete(irSubActivityKbParticipants)
+              .where(eq(irSubActivityKbParticipants.subActivityId, sub.id));
+            if (sub.kbParticipants.length > 0) {
+              await this.db.insert(irSubActivityKbParticipants).values(
+                sub.kbParticipants.map((p: any) => ({
+                  subActivityId: sub.id,
+                  userId: p.userId,
+                  role: p.role,
+                })),
+              );
+            }
+          } catch {
+            // Skip if table not migrated
+          }
+        }
+
+        if (sub.visitors !== undefined) {
+          try {
+            await this.db
+              .delete(irSubActivityVisitors)
+              .where(eq(irSubActivityVisitors.subActivityId, sub.id));
+            if (sub.visitors.length > 0) {
+              await this.db.insert(irSubActivityVisitors).values(
+                sub.visitors.map((v: any) => ({
+                  subActivityId: sub.id,
+                  visitorName: v.visitorName,
+                  visitorType: v.visitorType,
+                  company: v.company,
+                })),
+              );
+            }
+          } catch {
+            // Skip if table not migrated
+          }
+        }
+
+        if (sub.keywords !== undefined) {
+          try {
+            await this.db
+              .delete(irSubActivityKeywords)
+              .where(eq(irSubActivityKeywords.subActivityId, sub.id));
+            if (sub.keywords.length > 0) {
+              await this.db.insert(irSubActivityKeywords).values(
+                sub.keywords.slice(0, 5).map((keyword: string, index: number) => ({
+                  subActivityId: sub.id,
+                  keyword,
+                  displayOrder: index,
+                })),
+              );
+            }
+          } catch {
+            // Skip if table not migrated
+          }
+        }
       }
     }
 

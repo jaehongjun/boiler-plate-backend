@@ -1,8 +1,20 @@
 import { z } from 'zod';
-import { createIrActivitySchema } from './create-ir-activity.dto';
+import {
+  createIrActivitySchema,
+  createIrSubActivitySchema,
+} from './create-ir-activity.dto';
 
-// Base: all fields optional from create schema
-const baseUpdateSchema = createIrActivitySchema.partial();
+// Allow sub-activity update items to include id + partial fields
+export const updateIrSubActivitySchema = createIrSubActivitySchema
+  .partial()
+  .extend({
+    id: z.string().min(1),
+  });
+
+// Base: all fields optional from create schema, but subActivities use update schema
+const baseUpdateSchema = createIrActivitySchema.partial().extend({
+  subActivities: z.array(updateIrSubActivitySchema).optional(),
+});
 type BaseUpdate = z.infer<typeof baseUpdateSchema>;
 
 // Support both startDatetime/endDatetime and startISO/endISO for backward/FE compatibility.
@@ -43,3 +55,6 @@ export const updateIrActivityStatusSchema = z.object({
 export type UpdateIrActivityStatusDto = z.infer<
   typeof updateIrActivityStatusSchema
 >;
+
+// Export type for service usage
+export type UpdateIrSubActivityDto = z.infer<typeof updateIrSubActivitySchema>;

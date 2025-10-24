@@ -358,6 +358,33 @@ curl -X PATCH http://localhost:8080/api/ir/activities/act-1729584000000-abc123 \
 
 Note: To clear `endDatetime`, send `endDatetime` explicitly as `null` is not supported yet; prefer providing a concrete date or omit the field to keep it unchanged.
 
+### 5-1. Update Sub-Activities (부분 수정)
+
+메인 Activity의 PATCH로 하위 Sub-Activity를 부분 수정할 수 있습니다. 배열 내 각 항목은 `id`가 필수이며, 나머지 필드는 부분 업데이트가 가능합니다.
+
+**지원 필드:**
+- `title`, `ownerId`, `status`, `startDatetime`, `endDatetime`
+- 확장 필드(마이그레이션 적용 후 저장됨): `allDay`, `category`, `location`, `description`, `typePrimary`, `typeSecondary`, `memo`, `contentHtml`
+- 관계 필드(있으면 전체 교체): `kbParticipants`, `visitors`, `keywords`
+
+예시:
+
+```bash
+curl -X PATCH http://localhost:8080/api/ir/activities/ACTIVITY_ID \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subActivities": [
+      {
+        "id": "sub-1761274077514-4r7wtrg",
+        "startDatetime": "2025-10-26T02:01:00.000Z"
+      }
+    ]
+  }'
+```
+
+응답은 전체 Activity 엔티티가 반환되며, 해당 Sub-Activity의 변경사항이 반영됩니다.
+
 ## 6. Update Activity Status
 
 **PATCH** `/api/ir/activities/:id/status`
