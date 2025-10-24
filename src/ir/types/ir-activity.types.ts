@@ -7,6 +7,15 @@ export interface IrActivitySubActivityResponse {
   status: '예정' | '진행중' | '완료' | '중단';
   startDatetime?: string;
   endDatetime?: string;
+  // Extended optional fields to align with activity structure
+  allDay?: boolean;
+  category?: '내부' | '외부' | '휴가' | '공휴일';
+  location?: string;
+  description?: string;
+  typePrimary?: string;
+  typeSecondary?: string;
+  memo?: string;
+  contentHtml?: string;
 }
 
 export interface IrActivityLogResponse {

@@ -80,11 +80,30 @@ curl -X POST http://localhost:8080/api/ir/activities \
     "subActivities": [
       {
         "title": "Morgan Capital 미팅",
-        "status": "예정"
+        "status": "예정",
+        "startDatetime": "2025-10-22T02:00:00Z",
+        "endDatetime": "2025-10-22T03:00:00Z",
+        "allDay": false,
+        "category": "외부",
+        "location": "여의도 회의실 A",
+        "description": "Morgan 측과 NDR 논의",
+        "typePrimary": "NDR",
+        "typeSecondary": "1:1 미팅",
+        "ownerId": "USER_UUID_2",
+        "kbParticipants": [
+          { "userId": "USER_UUID_2", "role": "주관" }
+        ],
+        "visitors": [
+          { "visitorName": "Morgan Capital", "visitorType": "broker" }
+        ],
+        "keywords": ["Morgan", "NDR"]
       },
       {
         "title": "투자 계약서 검토",
-        "status": "예정"
+        "status": "예정",
+        "category": "내부",
+        "typePrimary": "Internal",
+        "ownerId": "USER_UUID_1"
       }
     ]
   }'
@@ -384,8 +403,23 @@ curl -X POST http://localhost:8080/api/ir/activities/act-1729584000000-abc123/su
   -H "Content-Type: application/json" \
   -d '{
     "title": "뉴욕 신규 투자 논의",
+    "status": "예정",
+    "startDatetime": "2025-10-25T01:00:00Z",
+    "endDatetime": "2025-10-25T02:00:00Z",
+    "allDay": false,
+    "category": "외부",
+    "location": "NYC",
+    "description": "해외 투자자 초기 미팅",
+    "typePrimary": "NDR",
+    "typeSecondary": "해외",
     "ownerId": "USER_UUID_1",
-    "status": "예정"
+    "kbParticipants": [
+      { "userId": "USER_UUID_1", "role": "주관" }
+    ],
+    "visitors": [
+      { "visitorName": "NewInvestor Corp", "visitorType": "investor" }
+    ],
+    "keywords": ["해외", "초기"]
   }'
 ```
 
@@ -397,7 +431,15 @@ curl -X POST http://localhost:8080/api/ir/activities/act-1729584000000-abc123/su
     "id": "sub-1729584004000-mno678",
     "title": "뉴욕 신규 투자 논의",
     "owner": "김민수",
-    "status": "예정"
+    "status": "예정",
+    "startDatetime": "2025-10-25T01:00:00.000Z",
+    "endDatetime": "2025-10-25T02:00:00.000Z",
+    "allDay": false,
+    "category": "외부",
+    "location": "NYC",
+    "description": "해외 투자자 초기 미팅",
+    "typePrimary": "NDR",
+    "typeSecondary": "해외"
   },
   "message": "Sub-activity added successfully"
 }

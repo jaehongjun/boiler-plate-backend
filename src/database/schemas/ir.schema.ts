@@ -94,6 +94,20 @@ export const irSubActivities = pgTable('ir_sub_activities', {
   startDatetime: timestamp('start_datetime', { withTimezone: true }),
   endDatetime: timestamp('end_datetime', { withTimezone: true }),
 
+  // Calendar Display (optional - can inherit from parent)
+  allDay: boolean('all_day').default(false),
+  category: irActivityCategoryEnum('category'),
+  location: varchar('location', { length: 255 }),
+  description: text('description'),
+
+  // Activity Classification (optional - can inherit from parent)
+  typePrimary: varchar('type_primary', { length: 50 }),
+  typeSecondary: varchar('type_secondary', { length: 50 }),
+
+  // Rich Content
+  memo: text('memo'),
+  contentHtml: text('content_html'),
+
   // Display Order
   displayOrder: integer('display_order').default(0),
 
@@ -238,6 +252,97 @@ export const irSubActivitiesRelations = relations(
   }),
 );
 
+// Sub-Activity KB Staff Participants (Many-to-Many)
+export const irSubActivityKbParticipants = pgTable(
+  'ir_sub_activity_kb_participants',
+  {
+    subActivityId: varchar('sub_activity_id', { length: 50 })
+      .references(() => irSubActivities.id, { onDelete: 'cascade' })
+      .notNull(),
+    userId: uuid('user_id')
+      .references(() => users.id)
+      .notNull(),
+    role: varchar('role', { length: 50 }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    pk: { columns: [table.subActivityId, table.userId] },
+  }),
+);
+
+// Sub-Activity External Visitors (Many-to-Many)
+export const irSubActivityVisitors = pgTable(
+  'ir_sub_activity_visitors',
+  {
+    subActivityId: varchar('sub_activity_id', { length: 50 })
+      .references(() => irSubActivities.id, { onDelete: 'cascade' })
+      .notNull(),
+    visitorName: varchar('visitor_name', { length: 255 }).notNull(),
+    visitorType: varchar('visitor_type', { length: 20 }), // 'investor' or 'broker'
+    company: varchar('company', { length: 255 }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    pk: { columns: [table.subActivityId, table.visitorName] },
+  }),
+);
+
+// Sub-Activity Keywords/Tags (Max 5 per sub-activity)
+export const irSubActivityKeywords = pgTable(
+  'ir_sub_activity_keywords',
+  {
+    subActivityId: varchar('sub_activity_id', { length: 50 })
+      .references(() => irSubActivities.id, { onDelete: 'cascade' })
+      .notNull(),
+    keyword: varchar('keyword', { length: 50 }).notNull(),
+    displayOrder: integer('display_order').default(0),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    pk: { columns: [table.subActivityId, table.keyword] },
+  }),
+);
+
+export const irSubActivityKbParticipantsRelations = relations(
+  irSubActivityKbParticipants,
+  ({ one }) => ({
+    subActivity: one(irSubActivities, {
+      fields: [irSubActivityKbParticipants.subActivityId],
+      references: [irSubActivities.id],
+    }),
+    user: one(users, {
+      fields: [irSubActivityKbParticipants.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const irSubActivityVisitorsRelations = relations(
+  irSubActivityVisitors,
+  ({ one }) => ({
+    subActivity: one(irSubActivities, {
+      fields: [irSubActivityVisitors.subActivityId],
+      references: [irSubActivities.id],
+    }),
+  }),
+);
+
+export const irSubActivityKeywordsRelations = relations(
+  irSubActivityKeywords,
+  ({ one }) => ({
+    subActivity: one(irSubActivities, {
+      fields: [irSubActivityKeywords.subActivityId],
+      references: [irSubActivities.id],
+    }),
+  }),
+);
+
 export const irActivityKbParticipantsRelations = relations(
   irActivityKbParticipants,
   ({ one }) => ({
@@ -302,6 +407,24 @@ export const insertIrActivitySchema = createInsertSchema(irActivities);
 export const selectIrActivitySchema = createSelectSchema(irActivities);
 export const insertIrSubActivitySchema = createInsertSchema(irSubActivities);
 export const selectIrSubActivitySchema = createSelectSchema(irSubActivities);
+export const insertIrSubActivityKbParticipantSchema = createInsertSchema(
+  irSubActivityKbParticipants,
+);
+export const selectIrSubActivityKbParticipantSchema = createSelectSchema(
+  irSubActivityKbParticipants,
+);
+export const insertIrSubActivityVisitorSchema = createInsertSchema(
+  irSubActivityVisitors,
+);
+export const selectIrSubActivityVisitorSchema = createSelectSchema(
+  irSubActivityVisitors,
+);
+export const insertIrSubActivityKeywordSchema = createInsertSchema(
+  irSubActivityKeywords,
+);
+export const selectIrSubActivityKeywordSchema = createSelectSchema(
+  irSubActivityKeywords,
+);
 export const insertIrActivityKbParticipantSchema = createInsertSchema(
   irActivityKbParticipants,
 );
@@ -330,6 +453,14 @@ export type IrActivity = typeof irActivities.$inferSelect;
 export type NewIrActivity = typeof irActivities.$inferInsert;
 export type IrSubActivity = typeof irSubActivities.$inferSelect;
 export type NewIrSubActivity = typeof irSubActivities.$inferInsert;
+export type IrSubActivityKbParticipant =
+  typeof irSubActivityKbParticipants.$inferSelect;
+export type NewIrSubActivityKbParticipant =
+  typeof irSubActivityKbParticipants.$inferInsert;
+export type IrSubActivityVisitor = typeof irSubActivityVisitors.$inferSelect;
+export type NewIrSubActivityVisitor = typeof irSubActivityVisitors.$inferInsert;
+export type IrSubActivityKeyword = typeof irSubActivityKeywords.$inferSelect;
+export type NewIrSubActivityKeyword = typeof irSubActivityKeywords.$inferInsert;
 export type IrActivityKbParticipant =
   typeof irActivityKbParticipants.$inferSelect;
 export type NewIrActivityKbParticipant =

@@ -17,15 +17,16 @@ import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 import { IrService } from './ir.service';
 import {
   createIrActivitySchema,
+  createIrSubActivitySchema,
   updateIrActivitySchema,
   updateIrActivityStatusSchema,
   queryIrActivitiesSchema,
   CreateIrActivityDto,
+  CreateIrSubActivityDto,
   UpdateIrActivityDto,
   UpdateIrActivityStatusDto,
   QueryIrActivitiesDto,
 } from './dto';
-import { z } from 'zod';
 
 @Controller('ir')
 @UseGuards(JwtAuthGuard)
@@ -158,29 +159,10 @@ export class IrController {
   @HttpCode(HttpStatus.CREATED)
   async addSubActivity(
     @Param('id') activityId: string,
-    @Body(
-      new ZodValidationPipe(
-        z.object({
-          title: z.string().min(1).max(255),
-          ownerId: z.string().uuid().optional(),
-          status: z.enum(['예정', '진행중', '완료', '중단']).default('예정'),
-        }),
-      ),
-    )
-    body: {
-      title: string;
-      ownerId?: string;
-      status: '예정' | '진행중' | '완료' | '중단';
-    },
+    @Body(new ZodValidationPipe(createIrSubActivitySchema)) body: CreateIrSubActivityDto,
     @CurrentUserId() userId: string,
   ) {
-    const subActivity = await this.irService.addSubActivity(
-      activityId,
-      body.title,
-      body.ownerId,
-      body.status,
-      userId,
-    );
+    const subActivity = await this.irService.addSubActivity(activityId, body, userId);
     return {
       success: true,
       data: subActivity,

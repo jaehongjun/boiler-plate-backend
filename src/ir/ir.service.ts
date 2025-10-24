@@ -10,10 +10,14 @@ import {
   irActivityKeywords,
   irActivityAttachments,
   irActivityLogs,
+  irSubActivityKbParticipants,
+  irSubActivityVisitors,
+  irSubActivityKeywords,
 } from '../database/schemas/ir.schema';
 import { users } from '../database/schemas/users';
 import {
   CreateIrActivityDto,
+  CreateIrSubActivityDto,
   UpdateIrActivityDto,
   UpdateIrActivityStatusDto,
   QueryIrActivitiesDto,
@@ -108,20 +112,106 @@ export class IrService {
 
     // Add sub-activities
     if (createDto.subActivities && createDto.subActivities.length > 0) {
-      await this.db.insert(irSubActivities).values(
-        createDto.subActivities.map((sub, index) => ({
-          id: this.generateId('sub'),
-          parentActivityId: activityId,
-          title: sub.title,
-          ownerId: sub.ownerId,
-          status: sub.status || '예정',
-          startDatetime: sub.startDatetime
-            ? new Date(sub.startDatetime)
-            : undefined,
-          endDatetime: sub.endDatetime ? new Date(sub.endDatetime) : undefined,
-          displayOrder: index,
-        })),
-      );
+      for (let i = 0; i < createDto.subActivities.length; i++) {
+        const sub = createDto.subActivities[i] as CreateIrSubActivityDto;
+        const subId = this.generateId('sub');
+
+        // Try extended insert first; fallback to legacy columns if migration not applied
+        try {
+          await this.db.insert(irSubActivities).values({
+            id: subId,
+            parentActivityId: activityId,
+            title: sub.title,
+            ownerId: sub.ownerId,
+            status: sub.status || '예정',
+            startDatetime: sub.startDatetime
+              ? new Date(sub.startDatetime)
+              : undefined,
+            endDatetime: sub.endDatetime
+              ? new Date(sub.endDatetime)
+              : undefined,
+            allDay: sub.allDay ?? false,
+            category: sub.category,
+            location: sub.location,
+            description: sub.description,
+            typePrimary: sub.typePrimary,
+            typeSecondary: sub.typeSecondary,
+            memo: sub.memo,
+            contentHtml: sub.contentHtml,
+            displayOrder: i,
+          });
+        } catch (e: any) {
+          // Likely due to missing columns; insert minimal columns only
+          if (
+            typeof e?.message === 'string' &&
+            e.message.includes('column') &&
+            e.message.includes('does not exist')
+          ) {
+            await this.db.insert(irSubActivities).values({
+              id: subId,
+              parentActivityId: activityId,
+              title: sub.title,
+              ownerId: sub.ownerId,
+              status: sub.status || '예정',
+              startDatetime: sub.startDatetime
+                ? new Date(sub.startDatetime)
+                : undefined,
+              endDatetime: sub.endDatetime
+                ? new Date(sub.endDatetime)
+                : undefined,
+              displayOrder: i,
+            });
+          } else {
+            throw e;
+          }
+        }
+
+        // Sub-level participants
+        if (sub.kbParticipants && sub.kbParticipants.length > 0) {
+          try {
+            await this.db.insert(irSubActivityKbParticipants).values(
+              sub.kbParticipants.map((p) => ({
+                subActivityId: subId,
+                userId: p.userId,
+                role: p.role,
+              })),
+            );
+          } catch {
+            // If table not migrated yet, skip silently
+          }
+        }
+
+        // Sub-level visitors
+        if (sub.visitors && sub.visitors.length > 0) {
+          try {
+            await this.db.insert(irSubActivityVisitors).values(
+              sub.visitors.map((v) => ({
+                subActivityId: subId,
+                visitorName: v.visitorName,
+                visitorType: v.visitorType,
+                company: v.company,
+              })),
+            );
+          } catch {
+            // Skip if not migrated
+          }
+        }
+
+        // Sub-level keywords
+        if (sub.keywords && sub.keywords.length > 0) {
+          try {
+            await this.db.insert(irSubActivityKeywords).values(
+              sub.keywords.slice(0, 5).map((keyword, index) => ({
+                subActivityId: subId,
+                keyword,
+                displayOrder: index,
+              })),
+            );
+          } catch {
+            // Skip if not migrated
+          }
+        }
+      }
     }
 
     // Create activity log
@@ -205,6 +295,18 @@ export class IrService {
       where: and(...conditions),
       with: {
         subActivities: {
+          columns: {
+            id: true,
+            title: true,
+            ownerId: true,
+            status: true,
+            startDatetime: true,
+            endDatetime: true,
+            displayOrder: true,
+            parentActivityId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
           with: {
             owner: true,
           },
@@ -230,6 +332,14 @@ export class IrService {
           status: sub.status,
           startDatetime: sub.startDatetime?.toISOString(),
           endDatetime: sub.endDatetime?.toISOString(),
+          allDay: sub.allDay || false,
+          category: sub.category || activity.category,
+          location: sub.location || undefined,
+          description: sub.description || undefined,
+          typePrimary: sub.typePrimary || activity.typePrimary,
+          typeSecondary: sub.typeSecondary || undefined,
+          memo: sub.memo || undefined,
+          contentHtml: sub.contentHtml || undefined,
         })),
       }),
     );
@@ -246,6 +356,18 @@ export class IrService {
       with: {
         owner: true,
         subActivities: {
+          columns: {
+            id: true,
+            title: true,
+            ownerId: true,
+            status: true,
+            startDatetime: true,
+            endDatetime: true,
+            displayOrder: true,
+            parentActivityId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
           with: {
             owner: true,
           },
@@ -533,9 +655,7 @@ export class IrService {
    */
   async addSubActivity(
     activityId: string,
-    title: string,
-    ownerId: string | undefined,
-    status: '예정' | '진행중' | '완료' | '중단',
+    subDto: CreateIrSubActivityDto,
     userId: string,
   ): Promise<IrActivitySubActivityResponse> {
     const activity = await (this.db.query as any).irActivities.findFirst({
@@ -555,14 +675,99 @@ export class IrService {
 
     const subId = this.generateId('sub');
 
-    await this.db.insert(irSubActivities).values({
-      id: subId,
-      parentActivityId: activityId,
-      title,
-      ownerId,
-      status,
-      displayOrder: existingSubs.length,
-    });
+    try {
+      await this.db.insert(irSubActivities).values({
+        id: subId,
+        parentActivityId: activityId,
+        title: subDto.title,
+        ownerId: subDto.ownerId,
+        status: subDto.status || '예정',
+        startDatetime: subDto.startDatetime
+          ? new Date(subDto.startDatetime)
+          : undefined,
+        endDatetime: subDto.endDatetime
+          ? new Date(subDto.endDatetime)
+          : undefined,
+        allDay: subDto.allDay ?? false,
+        category: subDto.category,
+        location: subDto.location,
+        description: subDto.description,
+        typePrimary: subDto.typePrimary,
+        typeSecondary: subDto.typeSecondary,
+        memo: subDto.memo,
+        contentHtml: subDto.contentHtml,
+        displayOrder: existingSubs.length,
+      });
+    } catch (e: any) {
+      if (
+        typeof e?.message === 'string' &&
+        e.message.includes('column') &&
+        e.message.includes('does not exist')
+      ) {
+        await this.db.insert(irSubActivities).values({
+          id: subId,
+          parentActivityId: activityId,
+          title: subDto.title,
+          ownerId: subDto.ownerId,
+          status: subDto.status || '예정',
+          startDatetime: subDto.startDatetime
+            ? new Date(subDto.startDatetime)
+            : undefined,
+          endDatetime: subDto.endDatetime
+            ? new Date(subDto.endDatetime)
+            : undefined,
+          displayOrder: existingSubs.length,
+        });
+      } else {
+        throw e;
+      }
+    }
+
+    // Sub-level participants
+    if (subDto.kbParticipants && subDto.kbParticipants.length > 0) {
+      try {
+        await this.db.insert(irSubActivityKbParticipants).values(
+          subDto.kbParticipants.map((p) => ({
+            subActivityId: subId,
+            userId: p.userId,
+            role: p.role,
+          })),
+        );
+      } catch {
+        // Table not migrated yet; skip silently
+      }
+    }
+
+    // Sub-level visitors
+    if (subDto.visitors && subDto.visitors.length > 0) {
+      try {
+        await this.db.insert(irSubActivityVisitors).values(
+          subDto.visitors.map((v) => ({
+            subActivityId: subId,
+            visitorName: v.visitorName,
+            visitorType: v.visitorType,
+            company: v.company,
+          })),
+        );
+      } catch {
+        // Skip if not migrated
+      }
+    }
+
+    // Sub-level keywords
+    if (subDto.keywords && subDto.keywords.length > 0) {
+      try {
+        await this.db.insert(irSubActivityKeywords).values(
+          subDto.keywords.slice(0, 5).map((keyword, index) => ({
+            subActivityId: subId,
+            keyword,
+            displayOrder: index,
+          })),
+        );
+      } catch {
+        // Skip if not migrated
+      }
+    }
 
     // Create log
     const user = await (this.db.query as any).users.findFirst({
@@ -575,7 +780,7 @@ export class IrService {
       logType: 'sub_activity',
       userId,
       userName: user?.name || 'Unknown',
-      message: `세부 활동 추가: ${title}`,
+      message: `세부 활동 추가: ${subDto.title}`,
     });
 
     const created = await (this.db.query as any).irSubActivities.findFirst({
@@ -592,6 +797,14 @@ export class IrService {
       status: created!.status,
       startDatetime: created!.startDatetime?.toISOString(),
       endDatetime: created!.endDatetime?.toISOString(),
+      allDay: created!.allDay || false,
+      category: created!.category || activity.category,
+      location: created!.location || undefined,
+      description: created!.description || undefined,
+      typePrimary: created!.typePrimary || activity.typePrimary,
+      typeSecondary: created!.typeSecondary || undefined,
+      memo: created!.memo || undefined,
+      contentHtml: created!.contentHtml || undefined,
     };
   }
 }

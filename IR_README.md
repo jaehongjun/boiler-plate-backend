@@ -116,6 +116,17 @@ interface IRActivityEntity {
     title: string;
     owner?: string;
     status: IRStatus;
+    // Optional extended fields (align with activity)
+    startDatetime?: string;
+    endDatetime?: string;
+    allDay?: boolean;
+    category?: '내부' | '외부' | '휴가' | '공휴일';
+    location?: string;
+    description?: string;
+    typePrimary?: string;
+    typeSecondary?: string;
+    memo?: string;
+    contentHtml?: string;
   }[];
 
   // Metadata
@@ -675,12 +686,37 @@ Update activity status
 
 Add sub-activity
 
-**Request Body:**
+**Request Body:** Same as Activity create payload, except it DOES NOT include `subActivities` (2-level only). All fields are optional unless the UI enforces them.
+
 ```typescript
 {
-  title: string;
-  owner?: string;
-  status: "예정" | "진행중" | "완료" | "중단";
+  // Core
+  title: string; // required
+  startDatetime?: string; // ISO
+  endDatetime?: string;   // ISO
+  status?: "예정" | "진행중" | "완료" | "중단";
+
+  // Calendar
+  allDay?: boolean;
+  category?: '내부' | '외부' | '휴가' | '공휴일';
+  location?: string;
+  description?: string;
+
+  // Classification
+  typePrimary?: string;
+  typeSecondary?: string;
+
+  // Content
+  memo?: string;
+  contentHtml?: string;
+
+  // Ownership
+  ownerId?: string; // UUID
+
+  // Relations
+  kbParticipants?: Array<{ userId: string; role?: string }>;
+  visitors?: Array<{ visitorName: string; visitorType?: 'investor' | 'broker'; company?: string }>;
+  keywords?: string[]; // max 5
 }
 ```
 
