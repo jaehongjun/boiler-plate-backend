@@ -67,6 +67,8 @@ Postman 컬렉션 파일입니다.
 - `end` (required): 조회 종료 일시 (ISO 8601 format)
 - `status` (optional): 상태 필터 (`예정`, `진행중`, `완료`, `중단`, `전체`)
 - `category` (optional): 카테고리 필터 (`내부`, `외부`, `휴가`, `공휴일`)
+- `sortBy` (optional): 정렬 기준 (`startDatetime`, `updatedAt`, `title`, `status`) - default: `startDatetime`
+- `sortOrder` (optional): 정렬 순서 (`asc`, `desc`) - default: `desc`
 
 **Headers:**
 ```
@@ -100,7 +102,22 @@ curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-### 5. jq로 특정 필드만 추출
+### 5. 정렬 옵션 사용
+```bash
+# 시작일 오름차순 (가장 오래된 것부터)
+curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z&sortBy=startDatetime&sortOrder=asc" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 업데이트 최신순
+curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z&sortBy=updatedAt&sortOrder=desc" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 제목 가나다순
+curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z&sortBy=title&sortOrder=asc" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### 6. jq로 특정 필드만 추출
 ```bash
 curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z" \
   -H "Authorization: Bearer YOUR_TOKEN" \

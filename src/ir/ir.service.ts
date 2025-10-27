@@ -292,6 +292,10 @@ export class IrService {
       conditions.push(eq(irActivities.status, query.status));
     }
 
+    // Determine sort field and order
+    const sortBy = query.sortBy || 'startDatetime';
+    const sortOrder = query.sortOrder || 'desc';
+
     const activities = await (this.db.query as any).irActivities.findMany({
       where: and(...conditions),
       with: {
@@ -316,7 +320,21 @@ export class IrService {
           },
         },
       },
-      orderBy: (activities, { desc }) => [desc(activities.startDatetime)],
+      orderBy: (activities, { asc, desc }) => {
+        const sortFn = sortOrder === 'asc' ? asc : desc;
+        switch (sortBy) {
+          case 'startDatetime':
+            return [sortFn(activities.startDatetime)];
+          case 'updatedAt':
+            return [sortFn(activities.updatedAt)];
+          case 'title':
+            return [sortFn(activities.title)];
+          case 'status':
+            return [sortFn(activities.status)];
+          default:
+            return [desc(activities.startDatetime)];
+        }
+      },
     });
 
     const listItems: IrActivityListItemResponse[] = activities.map(

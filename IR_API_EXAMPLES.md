@@ -251,15 +251,36 @@ curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-**Optional Query Parameters:**
+**Query Parameters:**
 - `start`: (required) 조회 시작 일시 (ISO 8601 format)
 - `end`: (required) 조회 종료 일시 (ISO 8601 format)
-- `status`: Filter by status ('예정', '진행중', '완료', '중단', '전체')
-- `category`: Filter by category ('내부', '외부', '휴가', '공휴일')
+- `status`: (optional) Filter by status ('예정', '진행중', '완료', '중단', '전체')
+- `category`: (optional) Filter by category ('내부', '외부', '휴가', '공휴일')
+- `sortBy`: (optional) Sort field ('startDatetime', 'updatedAt', 'title', 'status') - default: 'startDatetime'
+- `sortOrder`: (optional) Sort order ('asc', 'desc') - default: 'desc'
 
 **Example with filters:**
 ```bash
 curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z&status=예정&category=외부" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Example with sorting:**
+```bash
+# 시작일 오름차순 (가장 오래된 것부터)
+curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z&sortBy=startDatetime&sortOrder=asc" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 업데이트 최신순
+curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z&sortBy=updatedAt&sortOrder=desc" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 제목 가나다순
+curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z&sortBy=title&sortOrder=asc" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 상태별 정렬
+curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z&sortBy=status&sortOrder=asc" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
