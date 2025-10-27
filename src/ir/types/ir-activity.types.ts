@@ -100,3 +100,23 @@ export interface IrTimelineActivityResponse {
   status: '예정' | '진행중' | '완료' | '중단';
   subActivities?: IrActivitySubActivityResponse[];
 }
+
+// List view activity (for table display)
+export interface IrActivityListItemResponse {
+  id: string;
+  title: string; // 활동명
+  startISO: string; // 일시
+  endISO?: string;
+  typePrimary: string; // 유형 (One-on-One, Conference Call 등)
+  status: '예정' | '진행중' | '완료' | '중단';
+  category: '내부' | '외부' | '휴가' | '공휴일';
+
+  // 참가자 정보
+  investors: string[]; // 투자자
+  brokers: string[]; // 방문자 (브로커)
+  kbParticipants: string[]; // 면담자 (KB 직원)
+  owner?: string; // 담당자
+
+  // 메타데이터
+  updatedAtISO: string; // 마지막 업데이트
+}

@@ -240,7 +240,159 @@ curl -X GET "http://localhost:8080/api/ir/timeline/activities?start=2025-10-01T0
 }
 ```
 
-## 4. Get Activity Details
+## 4. Get List View Activities (Table Format)
+
+**GET** `/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z`
+
+테이블 형식으로 IR 활동 목록을 조회합니다. 일시, 유형, 활동명, 투자자, 방문자, 면담자, 담당자, 업데이트 날짜를 포함합니다.
+
+```bash
+curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Optional Query Parameters:**
+- `start`: (required) 조회 시작 일시 (ISO 8601 format)
+- `end`: (required) 조회 종료 일시 (ISO 8601 format)
+- `status`: Filter by status ('예정', '진행중', '완료', '중단', '전체')
+- `category`: Filter by category ('내부', '외부', '휴가', '공휴일')
+
+**Example with filters:**
+```bash
+curl -X GET "http://localhost:8080/api/ir/list/activities?start=2025-09-01T00:00:00Z&end=2025-09-30T23:59:59Z&status=예정&category=외부" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "activities": [
+      {
+        "id": "act-1727096400000-abc123",
+        "title": "한국투자파트너스 펀드 리뷰 미팅",
+        "startISO": "2025-09-23T05:00:00.000Z",
+        "endISO": "2025-09-23T06:00:00.000Z",
+        "typePrimary": "One-on-One",
+        "status": "예정",
+        "category": "외부",
+        "investors": ["도교 인베스트먼트"],
+        "brokers": [],
+        "kbParticipants": ["도교 인베스트먼트"],
+        "owner": "박성호",
+        "updatedAtISO": "2025-09-23T05:00:00.000Z"
+      },
+      {
+        "id": "act-1727096400001-def456",
+        "title": "KB증권 리서치 팔로업 미팅",
+        "startISO": "2025-09-23T05:00:00.000Z",
+        "endISO": null,
+        "typePrimary": "Conference Call",
+        "status": "예정",
+        "category": "외부",
+        "investors": [],
+        "brokers": ["레스토 캐피탈"],
+        "kbParticipants": ["레스토 캐피탈"],
+        "owner": "장도윤",
+        "updatedAtISO": "2025-09-23T05:00:00.000Z"
+      },
+      {
+        "id": "act-1727096400002-ghi789",
+        "title": "파트너스 NDR 세션",
+        "startISO": "2025-09-23T05:00:00.000Z",
+        "endISO": "2025-09-23T06:00:00.000Z",
+        "typePrimary": "확상미팅",
+        "status": "예정",
+        "category": "외부",
+        "investors": ["애퀴티 파트너스"],
+        "brokers": [],
+        "kbParticipants": ["SD 이지현"],
+        "owner": "이지현",
+        "updatedAtISO": "2025-09-23T05:00:00.000Z"
+      },
+      {
+        "id": "act-1727096400003-jkl012",
+        "title": "미국 ABC Investment",
+        "startISO": "2025-09-23T05:00:00.000Z",
+        "endISO": "2025-09-23T06:00:00.000Z",
+        "typePrimary": "국내 NDR",
+        "status": "예정",
+        "category": "외부",
+        "investors": ["아프리카 투자그룹"],
+        "brokers": ["벤처스"],
+        "kbParticipants": [],
+        "owner": "김민수",
+        "updatedAtISO": "2025-09-23T05:00:00.000Z"
+      },
+      {
+        "id": "act-1727096400004-mno345",
+        "title": "정기 IR 미팅",
+        "startISO": "2025-09-23T05:00:00.000Z",
+        "endISO": "2025-09-23T06:00:00.000Z",
+        "typePrimary": "국내 Conference",
+        "status": "예정",
+        "category": "외부",
+        "investors": [],
+        "brokers": ["레스토 캐피탈"],
+        "kbParticipants": ["레스토 캐피탈"],
+        "owner": "박성호",
+        "updatedAtISO": "2025-09-23T05:00:00.000Z"
+      },
+      {
+        "id": "act-1727096400005-pqr678",
+        "title": "싱가포르 Bridge Capital",
+        "startISO": "2025-09-23T05:00:00.000Z",
+        "endISO": "2025-09-23T06:00:00.000Z",
+        "typePrimary": "CEO 투어",
+        "status": "예정",
+        "category": "외부",
+        "investors": ["도교 인베스트먼트"],
+        "brokers": [],
+        "kbParticipants": ["도교 인베스트먼트", "SD 오웅진"],
+        "owner": "오웅진",
+        "updatedAtISO": "2025-09-23T05:00:00.000Z"
+      },
+      {
+        "id": "act-1727096400006-stu901",
+        "title": "파트너스 NDR 세션",
+        "startISO": "2025-09-23T05:00:00.000Z",
+        "endISO": "2025-09-23T06:00:00.000Z",
+        "typePrimary": "Dinner Meeting",
+        "status": "예정",
+        "category": "외부",
+        "investors": [],
+        "brokers": ["레스토 캐피탈"],
+        "kbParticipants": ["레스토 캐피탈"],
+        "owner": "이지현",
+        "updatedAtISO": "2025-09-23T05:00:00.000Z"
+      }
+    ],
+    "total": 7
+  },
+  "message": "List view activities retrieved successfully"
+}
+```
+
+**Response Fields:**
+- `id`: 활동 고유 ID
+- `title`: IR명 (활동명)
+- `startISO`: 시작 일시 (ISO 8601)
+- `endISO`: 종료 일시 (ISO 8601, nullable)
+- `typePrimary`: 유형 (One-on-One, Conference Call, NDR 등)
+- `status`: 상태 (예정, 진행중, 완료, 중단)
+- `category`: 카테고리 (내부, 외부, 휴가, 공휴일)
+- `investors`: 투자자 목록 (배열)
+- `brokers`: 방문자/브로커 목록 (배열)
+- `kbParticipants`: KB 직원 면담자 목록 (배열)
+- `owner`: 담당자명
+- `updatedAtISO`: 마지막 업데이트 일시 (ISO 8601)
+- `total`: 전체 활동 개수
+
+**Use Case:**
+이 API는 테이블 형식의 목록 뷰에서 사용됩니다. 캘린더나 타임라인과 달리, 모든 참가자 정보와 담당자를 한 번에 조회할 수 있어 관리 화면에 적합합니다.
+
+## 5. Get Activity Details
 
 **GET** `/api/ir/activities/:id`
 
@@ -306,7 +458,7 @@ curl -X GET http://localhost:8080/api/ir/activities/act-1729584000000-abc123 \
 }
 ```
 
-## 5. Update Activity
+## 6. Update Activity
 
 **PATCH** `/api/ir/activities/:id`
 
@@ -358,7 +510,7 @@ curl -X PATCH http://localhost:8080/api/ir/activities/act-1729584000000-abc123 \
 
 Note: To clear `endDatetime`, send `endDatetime` explicitly as `null` is not supported yet; prefer providing a concrete date or omit the field to keep it unchanged.
 
-### 5-1. Update Sub-Activities (부분 수정)
+### 6-1. Update Sub-Activities (부분 수정)
 
 메인 Activity의 PATCH로 하위 Sub-Activity를 부분 수정할 수 있습니다. 배열 내 각 항목은 `id`가 필수이며, 나머지 필드는 부분 업데이트가 가능합니다.
 
@@ -385,7 +537,7 @@ curl -X PATCH http://localhost:8080/api/ir/activities/ACTIVITY_ID \
 
 응답은 전체 Activity 엔티티가 반환되며, 해당 Sub-Activity의 변경사항이 반영됩니다.
 
-## 6. Update Activity Status
+## 7. Update Activity Status
 
 **PATCH** `/api/ir/activities/:id/status`
 
@@ -420,7 +572,7 @@ curl -X PATCH http://localhost:8080/api/ir/activities/act-1729584000000-abc123/s
 }
 ```
 
-## 7. Add Sub-Activity
+## 8. Add Sub-Activity
 
 **POST** `/api/ir/activities/:id/sub-activities`
 
@@ -472,7 +624,7 @@ curl -X POST http://localhost:8080/api/ir/activities/act-1729584000000-abc123/su
 }
 ```
 
-## 8. Delete Activity
+## 9. Delete Activity
 
 **DELETE** `/api/ir/activities/:id`
 

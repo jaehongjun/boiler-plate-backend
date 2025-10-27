@@ -68,6 +68,23 @@ export class IrController {
   }
 
   /**
+   * GET /api/ir/list/activities
+   * Get IR activities for list/table view
+   */
+  @Get('list/activities')
+  async getListViewActivities(
+    @Query(new ZodValidationPipe(queryIrActivitiesSchema))
+    query: QueryIrActivitiesDto,
+  ) {
+    const result = await this.irService.getListView(query);
+    return {
+      success: true,
+      data: result,
+      message: 'List view activities retrieved successfully',
+    };
+  }
+
+  /**
    * GET /api/ir/activities/:id
    * Get full IR activity details by ID
    */

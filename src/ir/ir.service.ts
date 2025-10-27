@@ -28,6 +28,7 @@ import {
   IrCalendarEventResponse,
   IrTimelineActivityResponse,
   IrActivitySubActivityResponse,
+  IrActivityListItemResponse,
 } from './types/ir-activity.types';
 
 @Injectable()
@@ -267,6 +268,82 @@ export class IrService {
     }));
 
     return { events };
+  }
+
+  /**
+   * Get all activities for list view (table)
+   */
+  async getListView(
+    query: QueryIrActivitiesDto,
+  ): Promise<{ activities: IrActivityListItemResponse[]; total: number }> {
+    const startDate = new Date(query.start);
+    const endDate = new Date(query.end);
+
+    const conditions = [
+      gte(irActivities.startDatetime, startDate),
+      lte(irActivities.startDatetime, endDate),
+    ];
+
+    if (query.category) {
+      conditions.push(eq(irActivities.category, query.category));
+    }
+
+    if (query.status && query.status !== '전체') {
+      conditions.push(eq(irActivities.status, query.status));
+    }
+
+    const activities = await (this.db.query as any).irActivities.findMany({
+      where: and(...conditions),
+      with: {
+        owner: {
+          columns: {
+            name: true,
+          },
+        },
+        kbParticipants: {
+          with: {
+            user: {
+              columns: {
+                name: true,
+              },
+            },
+          },
+        },
+        visitors: {
+          columns: {
+            visitorName: true,
+            visitorType: true,
+          },
+        },
+      },
+      orderBy: (activities, { desc }) => [desc(activities.startDatetime)],
+    });
+
+    const listItems: IrActivityListItemResponse[] = activities.map(
+      (activity: any) => ({
+        id: activity.id,
+        title: activity.title,
+        startISO: activity.startDatetime.toISOString(),
+        endISO: activity.endDatetime?.toISOString(),
+        typePrimary: activity.typePrimary,
+        status: activity.status,
+        category: activity.category,
+        investors: activity.visitors
+          .filter((v: any) => v.visitorType === 'investor')
+          .map((v: any) => v.visitorName),
+        brokers: activity.visitors
+          .filter((v: any) => v.visitorType === 'broker')
+          .map((v: any) => v.visitorName),
+        kbParticipants: activity.kbParticipants.map((p: any) => p.user.name),
+        owner: activity.owner?.name,
+        updatedAtISO: activity.updatedAt.toISOString(),
+      }),
+    );
+
+    return {
+      activities: listItems,
+      total: listItems.length,
+    };
   }
 
   /**
