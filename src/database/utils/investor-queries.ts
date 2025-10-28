@@ -239,9 +239,7 @@ export async function searchInvestors(
   year?: number,
   quarter?: number,
 ) {
-  const conditions = [
-    sql`${investors.name} ILIKE ${`%${searchTerm}%`}`,
-  ];
+  const conditions = [sql`${investors.name} ILIKE ${`%${searchTerm}%`}`];
 
   if (year && quarter) {
     conditions.push(eq(investorSnapshots.year, year));
@@ -257,10 +255,7 @@ export async function searchInvestors(
       groupRank: investorSnapshots.groupRank,
     })
     .from(investors)
-    .leftJoin(
-      investorSnapshots,
-      eq(investors.id, investorSnapshots.investorId),
-    )
+    .leftJoin(investorSnapshots, eq(investors.id, investorSnapshots.investorId))
     .where(and(...conditions))
     .limit(100);
 

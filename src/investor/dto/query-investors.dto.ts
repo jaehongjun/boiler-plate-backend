@@ -59,9 +59,7 @@ export const queryInvestorsTableSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 
-export type QueryInvestorsTableDto = z.infer<
-  typeof queryInvestorsTableSchema
->;
+export type QueryInvestorsTableDto = z.infer<typeof queryInvestorsTableSchema>;
 
 // Query DTO for investor history
 export const queryInvestorHistorySchema = z.object({

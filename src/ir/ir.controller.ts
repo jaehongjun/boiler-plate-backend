@@ -176,10 +176,15 @@ export class IrController {
   @HttpCode(HttpStatus.CREATED)
   async addSubActivity(
     @Param('id') activityId: string,
-    @Body(new ZodValidationPipe(createIrSubActivitySchema)) body: CreateIrSubActivityDto,
+    @Body(new ZodValidationPipe(createIrSubActivitySchema))
+    body: CreateIrSubActivityDto,
     @CurrentUserId() userId: string,
   ) {
-    const subActivity = await this.irService.addSubActivity(activityId, body, userId);
+    const subActivity = await this.irService.addSubActivity(
+      activityId,
+      body,
+      userId,
+    );
     return {
       success: true,
       data: subActivity,

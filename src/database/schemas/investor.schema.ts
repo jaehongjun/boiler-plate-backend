@@ -120,9 +120,9 @@ export const investorSnapshots = pgTable(
     // 그룹 내 자회사 수 (대표 스냅샷에만 의미)
     groupChildCount: smallint('group_child_count'),
 
-    sOverO: smallint('s_over_o'), // & S/O
-    ord: smallint('ord'),
-    adr: smallint('adr'),
+    sOverO: smallint('s_over_o'), // & S/O (percentage)
+    ord: integer('ord'), // Ordinary shares - need larger range
+    adr: integer('adr'), // ADR shares - need larger range
 
     investorType: investorTypeEnum('investor_type'),
     styleTag: styleTagEnum('style_tag'), // 태그 (긍정적 등)
@@ -145,7 +145,11 @@ export const investorSnapshots = pgTable(
   },
   (t) => ({
     // 동일 투자자/연도/분기 1건 보장 (스냅샷 정규화)
-    uq: uniqueIndex('investor_snapshots_uq').on(t.investorId, t.year, t.quarter),
+    uq: uniqueIndex('investor_snapshots_uq').on(
+      t.investorId,
+      t.year,
+      t.quarter,
+    ),
     periodIdx: index('investor_snapshots_period_idx').on(t.year, t.quarter),
     rankIdx: index('investor_snapshots_rank_idx').on(t.groupRank),
   }),
@@ -198,6 +202,128 @@ export const investorHistories = pgTable(
     investorIdx: index('investor_histories_investor_idx').on(t.investorId),
     periodIdx: index('investor_histories_period_idx').on(t.year, t.quarter),
     updatedByIdx: index('investor_histories_updated_by_idx').on(t.updatedBy),
+  }),
+);
+
+// ==================== Meeting History ====================
+
+export const investorMeetings = pgTable(
+  'investor_meetings',
+  {
+    id: serial('id').primaryKey(),
+    investorId: integer('investor_id')
+      .notNull()
+      .references(() => investors.id, { onDelete: 'cascade' }),
+
+    meetingDate: timestamp('meeting_date', { withTimezone: true }).notNull(),
+    meetingType: varchar('meeting_type', { length: 50 }).notNull(), // One-on-One, NDR, CEO 방문, Conference 등
+    topic: varchar('topic', { length: 200 }),
+    participants: text('participants'), // John, Harold, Rahul 등
+    tags: jsonb('tags').$type<string[]>(), // 방문형태, 주주총회 등
+
+    changeRate: varchar('change_rate', { length: 20 }), // +5.2%, -5.2% 등
+
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    investorIdx: index('investor_meetings_investor_idx').on(t.investorId),
+    dateIdx: index('investor_meetings_date_idx').on(t.meetingDate),
+  }),
+);
+
+// ==================== Interests (Word Cloud) ====================
+
+export const investorInterests = pgTable(
+  'investor_interests',
+  {
+    id: serial('id').primaryKey(),
+    investorId: integer('investor_id')
+      .notNull()
+      .references(() => investors.id, { onDelete: 'cascade' }),
+
+    topic: varchar('topic', { length: 100 }).notNull(), // 주조환원, 탄력 리스크, CEO 방문 등
+    frequency: smallint('frequency').default(1).notNull(), // 빈도수 (word cloud 크기용)
+
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    investorIdx: index('investor_interests_investor_idx').on(t.investorId),
+    topicIdx: index('investor_interests_topic_idx').on(t.topic),
+  }),
+);
+
+// ==================== Activities Timeline ====================
+
+export const investorActivities = pgTable(
+  'investor_activities',
+  {
+    id: serial('id').primaryKey(),
+    investorId: integer('investor_id')
+      .notNull()
+      .references(() => investors.id, { onDelete: 'cascade' }),
+
+    activityDate: timestamp('activity_date', { withTimezone: true }).notNull(),
+    activityType: varchar('activity_type', { length: 50 }).notNull(), // One-on-One, NDR, 방문예약, Conference 등
+    description: varchar('description', { length: 300 }),
+    participants: text('participants'),
+    tags: jsonb('tags').$type<string[]>(),
+
+    changeRate: varchar('change_rate', { length: 20 }),
+
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    investorIdx: index('investor_activities_investor_idx').on(t.investorId),
+    dateIdx: index('investor_activities_date_idx').on(t.activityDate),
+    typeIdx: index('investor_activities_type_idx').on(t.activityType),
+  }),
+);
+
+// ==================== Communications ====================
+
+export const investorCommunications = pgTable(
+  'investor_communications',
+  {
+    id: serial('id').primaryKey(),
+    investorId: integer('investor_id')
+      .notNull()
+      .references(() => investors.id, { onDelete: 'cascade' }),
+
+    communicationDate: timestamp('communication_date', {
+      withTimezone: true,
+    }).notNull(),
+    communicationType: varchar('communication_type', { length: 50 }).notNull(), // One-on-One, NDR, 등
+    description: varchar('description', { length: 300 }),
+    participants: text('participants'),
+    tags: jsonb('tags').$type<string[]>(),
+
+    changeRate: varchar('change_rate', { length: 20 }),
+
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    investorIdx: index('investor_communications_investor_idx').on(t.investorId),
+    dateIdx: index('investor_communications_date_idx').on(t.communicationDate),
   }),
 );
 
@@ -273,6 +399,10 @@ export const investorsRelations = relations(investors, ({ one, many }) => ({
   }),
   snapshots: many(investorSnapshots),
   histories: many(investorHistories),
+  meetings: many(investorMeetings),
+  interests: many(investorInterests),
+  activities: many(investorActivities),
+  communications: many(investorCommunications),
 }));
 
 export const investorSnapshotsRelations = relations(
@@ -315,15 +445,52 @@ export const gidUploadBatchesRelations = relations(
   }),
 );
 
-export const gidUploadRowsRelations = relations(
-  gidUploadRows,
+export const gidUploadRowsRelations = relations(gidUploadRows, ({ one }) => ({
+  batch: one(gidUploadBatches, {
+    fields: [gidUploadRows.batchId],
+    references: [gidUploadBatches.id],
+  }),
+  mappedInvestor: one(investors, {
+    fields: [gidUploadRows.mappedInvestorId],
+    references: [investors.id],
+  }),
+}));
+
+export const investorMeetingsRelations = relations(
+  investorMeetings,
   ({ one }) => ({
-    batch: one(gidUploadBatches, {
-      fields: [gidUploadRows.batchId],
-      references: [gidUploadBatches.id],
+    investor: one(investors, {
+      fields: [investorMeetings.investorId],
+      references: [investors.id],
     }),
-    mappedInvestor: one(investors, {
-      fields: [gidUploadRows.mappedInvestorId],
+  }),
+);
+
+export const investorInterestsRelations = relations(
+  investorInterests,
+  ({ one }) => ({
+    investor: one(investors, {
+      fields: [investorInterests.investorId],
+      references: [investors.id],
+    }),
+  }),
+);
+
+export const investorActivitiesRelations = relations(
+  investorActivities,
+  ({ one }) => ({
+    investor: one(investors, {
+      fields: [investorActivities.investorId],
+      references: [investors.id],
+    }),
+  }),
+);
+
+export const investorCommunicationsRelations = relations(
+  investorCommunications,
+  ({ one }) => ({
+    investor: one(investors, {
+      fields: [investorCommunications.investorId],
       references: [investors.id],
     }),
   }),
@@ -342,18 +509,36 @@ export const insertInvestorSnapshotSchema =
 export const selectInvestorSnapshotSchema =
   createSelectSchema(investorSnapshots);
 
-export const insertInvestorHistorySchema = createInsertSchema(
-  investorHistories,
-);
-export const selectInvestorHistorySchema = createSelectSchema(
-  investorHistories,
-);
+export const insertInvestorHistorySchema =
+  createInsertSchema(investorHistories);
+export const selectInvestorHistorySchema =
+  createSelectSchema(investorHistories);
 
 export const insertGidUploadBatchSchema = createInsertSchema(gidUploadBatches);
 export const selectGidUploadBatchSchema = createSelectSchema(gidUploadBatches);
 
 export const insertGidUploadRowSchema = createInsertSchema(gidUploadRows);
 export const selectGidUploadRowSchema = createSelectSchema(gidUploadRows);
+
+export const insertInvestorMeetingSchema = createInsertSchema(investorMeetings);
+export const selectInvestorMeetingSchema = createSelectSchema(investorMeetings);
+
+export const insertInvestorInterestSchema =
+  createInsertSchema(investorInterests);
+export const selectInvestorInterestSchema =
+  createSelectSchema(investorInterests);
+
+export const insertInvestorActivitySchema =
+  createInsertSchema(investorActivities);
+export const selectInvestorActivitySchema =
+  createSelectSchema(investorActivities);
+
+export const insertInvestorCommunicationSchema = createInsertSchema(
+  investorCommunications,
+);
+export const selectInvestorCommunicationSchema = createSelectSchema(
+  investorCommunications,
+);
 
 // ==================== TypeScript Types ====================
 
@@ -374,3 +559,16 @@ export type NewGidUploadBatch = typeof gidUploadBatches.$inferInsert;
 
 export type GidUploadRow = typeof gidUploadRows.$inferSelect;
 export type NewGidUploadRow = typeof gidUploadRows.$inferInsert;
+
+export type InvestorMeeting = typeof investorMeetings.$inferSelect;
+export type NewInvestorMeeting = typeof investorMeetings.$inferInsert;
+
+export type InvestorInterest = typeof investorInterests.$inferSelect;
+export type NewInvestorInterest = typeof investorInterests.$inferInsert;
+
+export type InvestorActivity = typeof investorActivities.$inferSelect;
+export type NewInvestorActivity = typeof investorActivities.$inferInsert;
+
+export type InvestorCommunication = typeof investorCommunications.$inferSelect;
+export type NewInvestorCommunication =
+  typeof investorCommunications.$inferInsert;

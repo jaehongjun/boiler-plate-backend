@@ -661,7 +661,7 @@ export class IrService {
 
     // Update sub-activities if provided
     if (updateDto.subActivities !== undefined) {
-      for (const sub of updateDto.subActivities as UpdateIrSubActivityDto[]) {
+      for (const sub of updateDto.subActivities) {
         if (!sub || !sub.id) continue;
 
         const subUpdate: any = {};
@@ -772,11 +772,13 @@ export class IrService {
               .where(eq(irSubActivityKeywords.subActivityId, sub.id));
             if (sub.keywords.length > 0) {
               await this.db.insert(irSubActivityKeywords).values(
-                sub.keywords.slice(0, 5).map((keyword: string, index: number) => ({
-                  subActivityId: sub.id,
-                  keyword,
-                  displayOrder: index,
-                })),
+                sub.keywords
+                  .slice(0, 5)
+                  .map((keyword: string, index: number) => ({
+                    subActivityId: sub.id,
+                    keyword,
+                    displayOrder: index,
+                  })),
               );
             }
           } catch {

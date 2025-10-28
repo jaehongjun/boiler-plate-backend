@@ -7,10 +7,7 @@ import {
   investorSnapshots,
   countries,
 } from '../database/schemas/investor.schema';
-import {
-  QueryInvestorsTableDto,
-  QueryTopInvestorsDto,
-} from './dto';
+import { QueryInvestorsTableDto, QueryTopInvestorsDto } from './dto';
 import {
   InvestorTableResponse,
   InvestorTableRow,
@@ -87,12 +84,7 @@ export class InvestorOptimizedService {
         investorSnapshots,
         eq(investors.id, investorSnapshots.investorId),
       )
-      .where(
-        and(
-          ...conditions,
-          eq(investors.isGroupRepresentative, true),
-        ),
-      )
+      .where(and(...conditions, eq(investors.isGroupRepresentative, true)))
       .orderBy(
         query.order === 'desc'
           ? desc(investorSnapshots.groupRank)
@@ -151,10 +143,16 @@ export class InvestorOptimizedService {
           eq(investorSnapshots.quarter, quarter),
           or(
             // Parent investors
-            sql`${investors.id} IN (${sql.join(parentIdList.map((id) => sql`${id}`), sql`, `)})`,
+            sql`${investors.id} IN (${sql.join(
+              parentIdList.map((id) => sql`${id}`),
+              sql`, `,
+            )})`,
             // OR children of these parents
             includeChildren
-              ? sql`${investors.parentId} IN (${sql.join(parentIdList.map((id) => sql`${id}`), sql`, `)})`
+              ? sql`${investors.parentId} IN (${sql.join(
+                  parentIdList.map((id) => sql`${id}`),
+                  sql`, `,
+                )})`
               : sql`false`,
           ) as any,
         ),
@@ -241,12 +239,7 @@ export class InvestorOptimizedService {
         investorSnapshots,
         eq(investors.id, investorSnapshots.investorId),
       )
-      .where(
-        and(
-          ...conditions,
-          eq(investors.isGroupRepresentative, true),
-        ),
-      );
+      .where(and(...conditions, eq(investors.isGroupRepresentative, true)));
 
     const total = totalCountResult[0]?.count || 0;
 

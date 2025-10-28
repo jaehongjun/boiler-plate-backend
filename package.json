@@ -26,7 +26,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "ts-node src/database/seeds/index.ts"
+    "db:seed": "ts-node src/database/seeds/index.ts",
+    "db:seed:investor-full": "ts-node src/database/seeds/investor-detail-full.seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

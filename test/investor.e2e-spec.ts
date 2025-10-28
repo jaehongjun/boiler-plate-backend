@@ -30,26 +30,30 @@ describe('InvestorController (e2e)', () => {
 
   describe('/api/investors/table (GET)', () => {
     it('should return investors table with valid period', () => {
-      return request(app.getHttpServer())
-        .get('/api/investors/table')
-        .query({ year: 2024, quarter: 4, page: 1, pageSize: 20 })
-        // .set('Authorization', `Bearer ${authToken}`) // Uncomment when auth is set up
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.success).toBe(true);
-          expect(res.body.data).toHaveProperty('period');
-          expect(res.body.data).toHaveProperty('rows');
-          expect(res.body.data.period.year).toBe(2024);
-          expect(res.body.data.period.quarter).toBe(4);
-          expect(Array.isArray(res.body.data.rows)).toBe(true);
-        });
+      return (
+        request(app.getHttpServer())
+          .get('/api/investors/table')
+          .query({ year: 2024, quarter: 4, page: 1, pageSize: 20 })
+          // .set('Authorization', `Bearer ${authToken}`) // Uncomment when auth is set up
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.success).toBe(true);
+            expect(res.body.data).toHaveProperty('period');
+            expect(res.body.data).toHaveProperty('rows');
+            expect(res.body.data.period.year).toBe(2024);
+            expect(res.body.data.period.quarter).toBe(4);
+            expect(Array.isArray(res.body.data.rows)).toBe(true);
+          })
+      );
     });
 
     it('should validate required query parameters', () => {
-      return request(app.getHttpServer())
-        .get('/api/investors/table')
-        // Missing year and quarter
-        .expect(400);
+      return (
+        request(app.getHttpServer())
+          .get('/api/investors/table')
+          // Missing year and quarter
+          .expect(400)
+      );
     });
 
     it('should support filtering by country', () => {

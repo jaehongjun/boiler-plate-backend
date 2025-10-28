@@ -17,13 +17,11 @@ import { InvestorService } from './investor.service';
 import {
   queryInvestorsTableSchema,
   queryInvestorHistorySchema,
-  queryInvestorDetailSchema,
   queryTopInvestorsSchema,
   updateInvestorSchema,
   updateInvestorSnapshotSchema,
   QueryInvestorsTableDto,
   QueryInvestorHistoryDto,
-  QueryInvestorDetailDto,
   QueryTopInvestorsDto,
   UpdateInvestorDto,
   UpdateInvestorSnapshotDto,
@@ -70,15 +68,12 @@ export class InvestorController {
 
   /**
    * GET /api/investors/:id
-   * Get single investor detail with snapshot
+   * Get single investor detail with all related data (frontend-formatted)
+   * Automatically fetches the latest quarter data
    */
   @Get(':id')
-  async getInvestorDetail(
-    @Param('id', ParseIntPipe) id: number,
-    @Query(new ZodValidationPipe(queryInvestorDetailSchema))
-    query: QueryInvestorDetailDto,
-  ) {
-    const result = await this.investorService.getInvestorDetail(id, query);
+  async getInvestorDetail(@Param('id', ParseIntPipe) id: number) {
+    const result = await this.investorService.getInvestorDetailForFrontend(id);
     return {
       success: true,
       data: result,

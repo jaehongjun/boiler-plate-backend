@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../database/database.module';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { eq, and, sql } from 'drizzle-orm';
@@ -103,7 +108,11 @@ export class GidService {
     userId: string,
   ): Promise<ProcessGidUploadResponse> {
     try {
-      console.log('[GID] processUploadBatch started:', { batchId, dto, userId });
+      console.log('[GID] processUploadBatch started:', {
+        batchId,
+        dto,
+        userId,
+      });
 
       // 배치 조회
       const [batch] = await this.db
@@ -146,158 +155,159 @@ export class GidService {
       const countryMap = new Map<string, string>();
       const allCountries = await this.db.select().from(countries);
       console.log('[GID] Countries loaded:', allCountries.length);
-    for (const c of allCountries) {
-      countryMap.set(c.code, c.code);
-    }
+      for (const c of allCountries) {
+        countryMap.set(c.code, c.code);
+      }
 
-    // REPLACE 모드: 기존 스냅샷 삭제
-    if (dto.mode === 'REPLACE') {
-      await this.db
-        .delete(investorSnapshots)
-        .where(
-          and(
-            eq(investorSnapshots.year, year),
-            eq(investorSnapshots.quarter, quarter),
-          ),
-        );
-    }
-
-    // 각 행 처리
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      try {
-        const parsed = this.parseRow(row.raw as any);
-        parsedCount++;
-
-        // 국가 코드 검증
-        if (parsed.country && !countryMap.has(parsed.country)) {
-          // 국가 코드가 없으면 생성
-          await this.db.insert(countries).values({
-            code: parsed.country,
-            nameKo: parsed.city || parsed.country,
-            nameEn: parsed.country,
-          });
-          countryMap.set(parsed.country, parsed.country);
-        }
-
-        // 투자자 찾기 또는 생성
-        const [investor] = await this.db
-          .select()
-          .from(investors)
-          .where(eq(investors.name, parsed.investorName))
-          .limit(1);
-
-        let investorRecord = investor;
-
-        const isParent = !!parsed.rank; // Rank가 있으면 모회사
-
-        if (!investorRecord) {
-          // 새 투자자 생성
-          [investorRecord] = await this.db
-            .insert(investors)
-            .values({
-              name: parsed.investorName,
-              countryCode: parsed.country || null,
-              city: parsed.city || null,
-              isGroupRepresentative: isParent,
-              parentId: null, // TODO: 그룹 매칭 로직 필요
-            })
-            .returning();
-          createdInvestors++;
-        }
-
-        // 스냅샷 찾기
-        const [existingSnapshot] = await this.db
-          .select()
-          .from(investorSnapshots)
+      // REPLACE 모드: 기존 스냅샷 삭제
+      if (dto.mode === 'REPLACE') {
+        await this.db
+          .delete(investorSnapshots)
           .where(
             and(
-              eq(investorSnapshots.investorId, investorRecord.id),
               eq(investorSnapshots.year, year),
               eq(investorSnapshots.quarter, quarter),
             ),
-          )
-          .limit(1);
-
-        const snapshotData = {
-          investorId: investorRecord.id,
-          year,
-          quarter,
-          groupRank: parsed.rank || null,
-          sOverO: parsed.sOverO,
-          ord: parsed.ord,
-          adr: parsed.adr,
-          investorType: parsed.investorType as any,
-          styleTag: parsed.styleTag as any,
-          styleNote: parsed.styleNote,
-          turnover: parsed.turnover as any,
-          orientation: parsed.orientation as any,
-          lastActivityAt: parsed.lastActivityAt
-            ? new Date(parsed.lastActivityAt)
-            : null,
-          uploadBatchId: batchId,
-        };
-
-        if (existingSnapshot && dto.mode === 'UPSERT') {
-          // 업데이트
-          const diff = createSnapshotDiff(existingSnapshot, snapshotData);
-
-          if (Object.keys(diff).length > 0) {
-            await this.db
-              .update(investorSnapshots)
-              .set(snapshotData)
-              .where(eq(investorSnapshots.id, existingSnapshot.id));
-
-            // 히스토리 기록
-            await this.db.insert(investorHistories).values({
-              investorId: investorRecord.id,
-              year,
-              quarter,
-              updatedBy: userId,
-              changes: diff as any,
-            });
-
-            updatedSnapshots++;
-            historyCount++;
-          }
-        } else if (!existingSnapshot || dto.mode === 'APPEND') {
-          // 새로 생성
-          await this.db.insert(investorSnapshots).values(snapshotData);
-          createdSnapshots++;
-        }
-
-        // 파싱된 데이터 저장
-        await this.db
-          .update(gidUploadRows)
-          .set({
-            parsed: parsed as any,
-            mappedInvestorId: investorRecord.id,
-          })
-          .where(eq(gidUploadRows.id, row.id));
-      } catch (error: any) {
-        errors.push({
-          row: i + 1,
-          message: error.message || 'Unknown error',
-          data: row.raw,
-        });
-
-        // 에러 저장
-        await this.db
-          .update(gidUploadRows)
-          .set({ error: error.message })
-          .where(eq(gidUploadRows.id, row.id));
+          );
       }
-    }
 
-    // 배치 상태 업데이트
-    const finalStatus = errors.length === rows.length ? 'FAILED' : 'PROCESSED';
-    await this.db
-      .update(gidUploadBatches)
-      .set({
-        status: finalStatus,
-        processedAt: new Date(),
-      })
-      .where(eq(gidUploadBatches.id, batchId));
+      // 각 행 처리
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        try {
+          const parsed = this.parseRow(row.raw as any);
+          parsedCount++;
+
+          // 국가 코드 검증
+          if (parsed.country && !countryMap.has(parsed.country)) {
+            // 국가 코드가 없으면 생성
+            await this.db.insert(countries).values({
+              code: parsed.country,
+              nameKo: parsed.city || parsed.country,
+              nameEn: parsed.country,
+            });
+            countryMap.set(parsed.country, parsed.country);
+          }
+
+          // 투자자 찾기 또는 생성
+          const [investor] = await this.db
+            .select()
+            .from(investors)
+            .where(eq(investors.name, parsed.investorName))
+            .limit(1);
+
+          let investorRecord = investor;
+
+          const isParent = !!parsed.rank; // Rank가 있으면 모회사
+
+          if (!investorRecord) {
+            // 새 투자자 생성
+            [investorRecord] = await this.db
+              .insert(investors)
+              .values({
+                name: parsed.investorName,
+                countryCode: parsed.country || null,
+                city: parsed.city || null,
+                isGroupRepresentative: isParent,
+                parentId: null, // TODO: 그룹 매칭 로직 필요
+              })
+              .returning();
+            createdInvestors++;
+          }
+
+          // 스냅샷 찾기
+          const [existingSnapshot] = await this.db
+            .select()
+            .from(investorSnapshots)
+            .where(
+              and(
+                eq(investorSnapshots.investorId, investorRecord.id),
+                eq(investorSnapshots.year, year),
+                eq(investorSnapshots.quarter, quarter),
+              ),
+            )
+            .limit(1);
+
+          const snapshotData = {
+            investorId: investorRecord.id,
+            year,
+            quarter,
+            groupRank: parsed.rank || null,
+            sOverO: parsed.sOverO,
+            ord: parsed.ord,
+            adr: parsed.adr,
+            investorType: parsed.investorType as any,
+            styleTag: parsed.styleTag as any,
+            styleNote: parsed.styleNote,
+            turnover: parsed.turnover as any,
+            orientation: parsed.orientation as any,
+            lastActivityAt: parsed.lastActivityAt
+              ? new Date(parsed.lastActivityAt)
+              : null,
+            uploadBatchId: batchId,
+          };
+
+          if (existingSnapshot && dto.mode === 'UPSERT') {
+            // 업데이트
+            const diff = createSnapshotDiff(existingSnapshot, snapshotData);
+
+            if (Object.keys(diff).length > 0) {
+              await this.db
+                .update(investorSnapshots)
+                .set(snapshotData)
+                .where(eq(investorSnapshots.id, existingSnapshot.id));
+
+              // 히스토리 기록
+              await this.db.insert(investorHistories).values({
+                investorId: investorRecord.id,
+                year,
+                quarter,
+                updatedBy: userId,
+                changes: diff as any,
+              });
+
+              updatedSnapshots++;
+              historyCount++;
+            }
+          } else if (!existingSnapshot || dto.mode === 'APPEND') {
+            // 새로 생성
+            await this.db.insert(investorSnapshots).values(snapshotData);
+            createdSnapshots++;
+          }
+
+          // 파싱된 데이터 저장
+          await this.db
+            .update(gidUploadRows)
+            .set({
+              parsed: parsed as any,
+              mappedInvestorId: investorRecord.id,
+            })
+            .where(eq(gidUploadRows.id, row.id));
+        } catch (error: any) {
+          errors.push({
+            row: i + 1,
+            message: error.message || 'Unknown error',
+            data: row.raw,
+          });
+
+          // 에러 저장
+          await this.db
+            .update(gidUploadRows)
+            .set({ error: error.message })
+            .where(eq(gidUploadRows.id, row.id));
+        }
+      }
+
+      // 배치 상태 업데이트
+      const finalStatus =
+        errors.length === rows.length ? 'FAILED' : 'PROCESSED';
+      await this.db
+        .update(gidUploadBatches)
+        .set({
+          status: finalStatus,
+          processedAt: new Date(),
+        })
+        .where(eq(gidUploadBatches.id, batchId));
 
       return {
         uploadBatchId: batchId,
@@ -315,7 +325,10 @@ export class GidService {
       };
     } catch (error) {
       console.error('[GID] processUploadBatch ERROR:', error);
-      console.error('[GID] Error stack:', error instanceof Error ? error.stack : 'No stack');
+      console.error(
+        '[GID] Error stack:',
+        error instanceof Error ? error.stack : 'No stack',
+      );
       throw error;
     }
   }
