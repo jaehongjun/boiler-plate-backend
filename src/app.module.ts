@@ -10,6 +10,7 @@ import { CrmModule } from './crm/crm.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { FilesModule } from './files/files.module';
 import { IrModule } from './ir/ir.module';
+import { InvestorModule } from './investor/investor.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { IrModule } from './ir/ir.module';
     CalendarModule,
     FilesModule,
     IrModule,
+    InvestorModule,
   ],
   controllers: [AppController],
   providers: [AppService],
