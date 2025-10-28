@@ -132,9 +132,15 @@ async function main() {
     { year: 2024, quarter: 4 },
   ];
 
+  // Create snapshots for parent investors
   for (let i = 0; i < createdInvestors.length; i++) {
     const investor = createdInvestors[i];
     if (investor.isGroupRepresentative) {
+      // Calculate child count
+      let childCount = 0;
+      if (investor.id === blackrockParent.id) childCount = 3;
+      if (investor.id === fidelityParent.id) childCount = 1;
+
       for (const period of quarters) {
         const baseData = snapshotData[i];
         // Add some variation by quarter
@@ -145,7 +151,7 @@ async function main() {
           year: period.year,
           quarter: period.quarter,
           groupRank: baseData.rank,
-          groupChildCount: investor.id === 1 ? 3 : investor.id === 5 ? 1 : 0,
+          groupChildCount: childCount,
           sOverO: baseData.sOverO + variation,
           ord: baseData.ord + variation * 1000,
           adr: baseData.adr + variation * 1000,
@@ -160,7 +166,42 @@ async function main() {
     }
   }
 
-  console.log('✅ Snapshots created for all periods');
+  // Create snapshots for child investors (자회사)
+  const childSnapshotTemplate = {
+    sOverO: 30,
+    ord: 25000,
+    adr: 30000,
+    type: 'HEDGE_FUND',
+    style: 'NEUTRAL',
+    note: '중립적',
+    turnover: 'MEDIUM',
+    orientation: 'ACTIVE',
+  };
+
+  for (const child of childInvestors) {
+    for (const period of quarters) {
+      const variation = Math.floor(Math.random() * 10) - 5;
+      const month = String(period.quarter * 3).padStart(2, '0');
+      await db.insert(investorSnapshots).values({
+        investorId: child.id,
+        year: period.year,
+        quarter: period.quarter,
+        groupRank: null, // 자회사는 랭킹 없음
+        groupChildCount: null,
+        sOverO: childSnapshotTemplate.sOverO + variation,
+        ord: childSnapshotTemplate.ord + variation * 500,
+        adr: childSnapshotTemplate.adr + variation * 500,
+        investorType: childSnapshotTemplate.type as any,
+        styleTag: childSnapshotTemplate.style as any,
+        styleNote: childSnapshotTemplate.note,
+        turnover: childSnapshotTemplate.turnover as any,
+        orientation: childSnapshotTemplate.orientation as any,
+        lastActivityAt: new Date(`${period.year}-${month}-15T14:00:00Z`),
+      });
+    }
+  }
+
+  console.log('✅ Snapshots created for all periods (parents + children)');
 
   // ==================== 5. Meetings for each investor ====================
   const meetingTemplates = [
@@ -277,7 +318,9 @@ async function main() {
   console.log('📊 생성된 데이터:');
   console.log('  - 국가: 7개 (JP, HK, MU, NL, US, UK, FR)');
   console.log('  - 투자자: 14개 (대표 10 + 자회사 4)');
-  console.log('  - 스냅샷: 120개 (10개 대표 × 12분기)');
+  console.log('    * BlackRock Investment (자회사 3개)');
+  console.log('    * Fidelity Asset Management (자회사 1개)');
+  console.log('  - 스냅샷: 168개 (10개 대표 × 12분기 + 4개 자회사 × 12분기)');
   console.log('  - 면담 이력: 30개 (10개 대표 × 3개씩)');
   console.log('  - 관심사: 70개 (10개 대표 × 7개씩)');
   console.log('  - 활동: 20개 (10개 대표 × 2개씩)');
