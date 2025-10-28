@@ -77,7 +77,10 @@ export const createIrActivitySchema = z.object({
   // Ownership
   ownerId: z.string().uuid().optional(),
 
-  // Participants
+  // Participants - Simple name array (stored as visitors with type 'kb')
+  kbs: z.array(z.string().min(1).max(255)).default([]).optional(),
+
+  // Legacy format (optional, for backward compatibility)
   kbParticipants: z
     .array(
       z.object({
@@ -85,17 +88,21 @@ export const createIrActivitySchema = z.object({
         role: z.string().max(50).optional(),
       }),
     )
-    .default([]),
+    .default([])
+    .optional(),
 
-  // Visitors
+  // Visitors - Simple name array or object array
   visitors: z
-    .array(
-      z.object({
-        visitorName: z.string().min(1).max(255),
-        visitorType: z.enum(['investor', 'broker']).optional(),
-        company: z.string().max(255).optional(),
-      }),
-    )
+    .union([
+      z.array(z.string().min(1).max(255)),
+      z.array(
+        z.object({
+          visitorName: z.string().min(1).max(255),
+          visitorType: z.enum(['investor', 'broker']).optional(),
+          company: z.string().max(255).optional(),
+        }),
+      ),
+    ])
     .default([]),
 
   // Keywords (max 5)

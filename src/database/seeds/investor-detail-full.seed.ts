@@ -66,7 +66,11 @@ async function main() {
     { name: 'HSBC Asset Management', country: 'HK', city: '홍콩' },
     { name: 'State Street Global Advisors', country: 'US', city: '보스턴' },
     { name: 'Sumitomo Mitsui Trust', country: 'JP', city: '오사카' },
-    { name: 'Legal & General Investment Management', country: 'UK', city: '런던' },
+    {
+      name: 'Legal & General Investment Management',
+      country: 'UK',
+      city: '런던',
+    },
   ];
 
   const createdInvestors: any[] = [];
@@ -87,16 +91,44 @@ async function main() {
   console.log(`✅ Created ${createdInvestors.length} parent investors`);
 
   // Then create child investors
-  const blackrockParent = createdInvestors.find(inv => inv.name === 'BlackRock Investment');
-  const fidelityParent = createdInvestors.find(inv => inv.name === 'Fidelity Asset Management');
+  const blackrockParent = createdInvestors.find(
+    (inv) => inv.name === 'BlackRock Investment',
+  );
+  const fidelityParent = createdInvestors.find(
+    (inv) => inv.name === 'Fidelity Asset Management',
+  );
 
   const childInvestors = await db
     .insert(investors)
     .values([
-      { name: 'BlackRock Japan Investment', parentId: blackrockParent.id, countryCode: 'JP', city: '도쿄', isGroupRepresentative: false },
-      { name: 'BlackRock Japan Investment (II)', parentId: blackrockParent.id, countryCode: 'JP', city: '도쿄', isGroupRepresentative: false },
-      { name: 'BlackRock Japan Investment (III)', parentId: blackrockParent.id, countryCode: 'JP', city: '도쿄', isGroupRepresentative: false },
-      { name: 'Fidelity HK Limited', parentId: fidelityParent.id, countryCode: 'HK', city: '완차이', isGroupRepresentative: false },
+      {
+        name: 'BlackRock Japan Investment',
+        parentId: blackrockParent.id,
+        countryCode: 'JP',
+        city: '도쿄',
+        isGroupRepresentative: false,
+      },
+      {
+        name: 'BlackRock Japan Investment (II)',
+        parentId: blackrockParent.id,
+        countryCode: 'JP',
+        city: '도쿄',
+        isGroupRepresentative: false,
+      },
+      {
+        name: 'BlackRock Japan Investment (III)',
+        parentId: blackrockParent.id,
+        countryCode: 'JP',
+        city: '도쿄',
+        isGroupRepresentative: false,
+      },
+      {
+        name: 'Fidelity HK Limited',
+        parentId: fidelityParent.id,
+        countryCode: 'HK',
+        city: '완차이',
+        isGroupRepresentative: false,
+      },
     ])
     .returning();
 
@@ -104,16 +136,116 @@ async function main() {
 
   // ==================== 4. Snapshots for all investors ====================
   const snapshotData = [
-    { rank: 1, sOverO: 70, ord: 132675, adr: 169522, type: 'HEDGE_FUND', style: 'POSITIVE', note: '긍정적', turnover: 'LOW', orientation: 'ACTIVE' },
-    { rank: 2, sOverO: 65, ord: 120000, adr: 150000, type: 'PENSION', style: 'NEUTRAL', note: '중립적', turnover: 'MEDIUM', orientation: 'ACTIVE' },
-    { rank: 3, sOverO: 60, ord: 110000, adr: 140000, type: 'MUTUAL_FUND', style: 'POSITIVE', note: '긍정적', turnover: 'LOW', orientation: 'ACTIVE' },
-    { rank: 4, sOverO: 58, ord: 105000, adr: 135000, type: 'INVESTMENT_ADVISOR', style: 'QUESTION_HEAVY', note: '질문 많음', turnover: 'HIGH', orientation: 'ACTIVE' },
-    { rank: 5, sOverO: 55, ord: 100000, adr: 130000, type: 'HEDGE_FUND', style: 'POSITIVE', note: '긍정적', turnover: 'MEDIUM', orientation: 'ACTIVE' },
-    { rank: 6, sOverO: 52, ord: 95000, adr: 125000, type: 'ETF', style: 'NEUTRAL', note: '중립적', turnover: 'LOW', orientation: 'INACTIVE' },
-    { rank: 7, sOverO: 50, ord: 90000, adr: 120000, type: 'SOVEREIGN', style: 'PICKY', note: '까칠함', turnover: 'LOW', orientation: 'ACTIVE' },
-    { rank: 8, sOverO: 48, ord: 85000, adr: 115000, type: 'PENSION', style: 'POSITIVE', note: '긍정적', turnover: 'MEDIUM', orientation: 'ACTIVE' },
-    { rank: 9, sOverO: 45, ord: 80000, adr: 110000, type: 'MUTUAL_FUND', style: 'NEUTRAL', note: '중립적', turnover: 'HIGH', orientation: 'ACTIVE' },
-    { rank: 10, sOverO: 42, ord: 75000, adr: 105000, type: 'BANK', style: 'NEGATIVE', note: '부정적', turnover: 'MEDIUM', orientation: 'INACTIVE' },
+    {
+      rank: 1,
+      sOverO: 70,
+      ord: 132675,
+      adr: 169522,
+      type: 'HEDGE_FUND',
+      style: 'POSITIVE',
+      note: '긍정적',
+      turnover: 'LOW',
+      orientation: 'ACTIVE',
+    },
+    {
+      rank: 2,
+      sOverO: 65,
+      ord: 120000,
+      adr: 150000,
+      type: 'PENSION',
+      style: 'NEUTRAL',
+      note: '중립적',
+      turnover: 'MEDIUM',
+      orientation: 'ACTIVE',
+    },
+    {
+      rank: 3,
+      sOverO: 60,
+      ord: 110000,
+      adr: 140000,
+      type: 'MUTUAL_FUND',
+      style: 'POSITIVE',
+      note: '긍정적',
+      turnover: 'LOW',
+      orientation: 'ACTIVE',
+    },
+    {
+      rank: 4,
+      sOverO: 58,
+      ord: 105000,
+      adr: 135000,
+      type: 'INVESTMENT_ADVISOR',
+      style: 'QUESTION_HEAVY',
+      note: '질문 많음',
+      turnover: 'HIGH',
+      orientation: 'ACTIVE',
+    },
+    {
+      rank: 5,
+      sOverO: 55,
+      ord: 100000,
+      adr: 130000,
+      type: 'HEDGE_FUND',
+      style: 'POSITIVE',
+      note: '긍정적',
+      turnover: 'MEDIUM',
+      orientation: 'ACTIVE',
+    },
+    {
+      rank: 6,
+      sOverO: 52,
+      ord: 95000,
+      adr: 125000,
+      type: 'ETF',
+      style: 'NEUTRAL',
+      note: '중립적',
+      turnover: 'LOW',
+      orientation: 'INACTIVE',
+    },
+    {
+      rank: 7,
+      sOverO: 50,
+      ord: 90000,
+      adr: 120000,
+      type: 'SOVEREIGN',
+      style: 'PICKY',
+      note: '까칠함',
+      turnover: 'LOW',
+      orientation: 'ACTIVE',
+    },
+    {
+      rank: 8,
+      sOverO: 48,
+      ord: 85000,
+      adr: 115000,
+      type: 'PENSION',
+      style: 'POSITIVE',
+      note: '긍정적',
+      turnover: 'MEDIUM',
+      orientation: 'ACTIVE',
+    },
+    {
+      rank: 9,
+      sOverO: 45,
+      ord: 80000,
+      adr: 110000,
+      type: 'MUTUAL_FUND',
+      style: 'NEUTRAL',
+      note: '중립적',
+      turnover: 'HIGH',
+      orientation: 'ACTIVE',
+    },
+    {
+      rank: 10,
+      sOverO: 42,
+      ord: 75000,
+      adr: 105000,
+      type: 'BANK',
+      style: 'NEGATIVE',
+      note: '부정적',
+      turnover: 'MEDIUM',
+      orientation: 'INACTIVE',
+    },
   ];
 
   // Create snapshots for multiple quarters
@@ -205,11 +337,41 @@ async function main() {
 
   // ==================== 5. Meetings for each investor ====================
   const meetingTemplates = [
-    { type: 'One-on-One', topic: '비대면', participants: 'John Smith', tags: ['영업현황', '수주현황', 'CETI 매출'], rate: '+5.2%' },
-    { type: 'NDR', topic: 'CEO, 비대면, IR비대면', participants: 'Harold Kim, Rahul Patel', tags: ['영업현황', '재무제표', '투자전략'], rate: '-2.1%' },
-    { type: 'Conference', topic: '방문형태', participants: 'Sarah Johnson', tags: ['시장전망', 'ESG 전략', '수익성'], rate: '+3.5%' },
-    { type: 'One-on-One', topic: 'CEO 방문', participants: 'Michael Chen', tags: ['신규사업', '성장성', '배당정책'], rate: '+1.8%' },
-    { type: 'Lunch Meeting', topic: '주주총회', participants: 'Emily Park', tags: ['경영권', '주주환원', '자본비용'], rate: '-0.5%' },
+    {
+      type: 'One-on-One',
+      topic: '비대면',
+      participants: 'John Smith',
+      tags: ['영업현황', '수주현황', 'CETI 매출'],
+      rate: '+5.2%',
+    },
+    {
+      type: 'NDR',
+      topic: 'CEO, 비대면, IR비대면',
+      participants: 'Harold Kim, Rahul Patel',
+      tags: ['영업현황', '재무제표', '투자전략'],
+      rate: '-2.1%',
+    },
+    {
+      type: 'Conference',
+      topic: '방문형태',
+      participants: 'Sarah Johnson',
+      tags: ['시장전망', 'ESG 전략', '수익성'],
+      rate: '+3.5%',
+    },
+    {
+      type: 'One-on-One',
+      topic: 'CEO 방문',
+      participants: 'Michael Chen',
+      tags: ['신규사업', '성장성', '배당정책'],
+      rate: '+1.8%',
+    },
+    {
+      type: 'Lunch Meeting',
+      topic: '주주총회',
+      participants: 'Emily Park',
+      tags: ['경영권', '주주환원', '자본비용'],
+      rate: '-0.5%',
+    },
   ];
 
   for (const investor of createdInvestors) {
@@ -235,11 +397,51 @@ async function main() {
 
   // ==================== 6. Interests for each investor ====================
   const interestTopics = [
-    ['주주환원', '탑직 리스크', '경영권', '성장성', '자본비용', '수익성', '일반 관리비'],
-    ['ESG 전략', '배당정책', '시장점유율', '신규사업', '재무구조', '영업이익', '투자전략'],
-    ['경영진 교체', '사업다각화', '리스크 관리', '매출성장', '비용절감', '현금흐름', '자산관리'],
-    ['주가 안정', '시장 트렌드', '경쟁력', '기술혁신', '글로벌 확장', '수익구조', '지배구조'],
-    ['브랜드 가치', '고객만족', '품질관리', '생산성', '인재육성', '조직문화', '협력관계'],
+    [
+      '주주환원',
+      '탑직 리스크',
+      '경영권',
+      '성장성',
+      '자본비용',
+      '수익성',
+      '일반 관리비',
+    ],
+    [
+      'ESG 전략',
+      '배당정책',
+      '시장점유율',
+      '신규사업',
+      '재무구조',
+      '영업이익',
+      '투자전략',
+    ],
+    [
+      '경영진 교체',
+      '사업다각화',
+      '리스크 관리',
+      '매출성장',
+      '비용절감',
+      '현금흐름',
+      '자산관리',
+    ],
+    [
+      '주가 안정',
+      '시장 트렌드',
+      '경쟁력',
+      '기술혁신',
+      '글로벌 확장',
+      '수익구조',
+      '지배구조',
+    ],
+    [
+      '브랜드 가치',
+      '고객만족',
+      '품질관리',
+      '생산성',
+      '인재육성',
+      '조직문화',
+      '협력관계',
+    ],
   ];
 
   for (let idx = 0; idx < createdInvestors.length; idx++) {
@@ -260,9 +462,27 @@ async function main() {
 
   // ==================== 7. Activities for each investor ====================
   const activityTemplates = [
-    { type: 'One-on-One', desc: 'SQ 실적 취약', participants: 'John', tags: ['영업현황', '수주현황'], rate: '+1.2%' },
-    { type: 'NDR', desc: '신년 투자 계획', participants: 'Harold', tags: ['투자전략', '포트폴리오'], rate: '-5.2%' },
-    { type: 'Conference', desc: '분기 실적 검토', participants: 'Sarah', tags: ['재무제표', '영업이익'], rate: '+0.8%' },
+    {
+      type: 'One-on-One',
+      desc: 'SQ 실적 취약',
+      participants: 'John',
+      tags: ['영업현황', '수주현황'],
+      rate: '+1.2%',
+    },
+    {
+      type: 'NDR',
+      desc: '신년 투자 계획',
+      participants: 'Harold',
+      tags: ['투자전략', '포트폴리오'],
+      rate: '-5.2%',
+    },
+    {
+      type: 'Conference',
+      desc: '분기 실적 검토',
+      participants: 'Sarah',
+      tags: ['재무제표', '영업이익'],
+      rate: '+0.8%',
+    },
   ];
 
   for (const investor of createdInvestors) {
@@ -290,8 +510,16 @@ async function main() {
   const commTemplates = [
     { type: '대면미팅', desc: '1Q25 미팅', tags: [] },
     { type: '비대면미팅', desc: '2Q25 화상회의', tags: [] },
-    { type: 'One-on-One', desc: '3Q25 - 지역별(6)', tags: ['단독만남', 'IR 전략', '수익성'] },
-    { type: 'Conference', desc: '4Q25 컨퍼런스', tags: ['시장전망', '투자전략'] },
+    {
+      type: 'One-on-One',
+      desc: '3Q25 - 지역별(6)',
+      tags: ['단독만남', 'IR 전략', '수익성'],
+    },
+    {
+      type: 'Conference',
+      desc: '4Q25 컨퍼런스',
+      tags: ['시장전망', '투자전략'],
+    },
   ];
 
   for (const investor of createdInvestors) {

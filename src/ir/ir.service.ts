@@ -73,10 +73,10 @@ export class IrService {
       typeSecondary: createDto.typeSecondary,
       memo: createDto.memo,
       contentHtml: createDto.contentHtml,
-      ownerId: createDto.ownerId,
+      ownerId: createDto.ownerId || userId, // Default to creator if not specified
     });
 
-    // Add KB participants
+    // Add KB participants (legacy format with userId)
     if (createDto.kbParticipants && createDto.kbParticipants.length > 0) {
       await this.db.insert(irActivityKbParticipants).values(
         createDto.kbParticipants.map((p) => ({
@@ -87,10 +87,57 @@ export class IrService {
       );
     }
 
-    // Add visitors
+    // Add visitors - collect all visitors
+    const allVisitors: Array<{
+      visitorName: string;
+      visitorType?: 'investor' | 'broker' | 'kb';
+      company?: string;
+    }> = [];
+
+    // Add KB staff as visitors (simple name array)
+    if (createDto.kbs && createDto.kbs.length > 0) {
+      allVisitors.push(
+        ...createDto.kbs.map((name) => ({
+          visitorName: name,
+          visitorType: 'kb' as const,
+          company: undefined,
+        })),
+      );
+    }
+
+    // Add regular visitors
     if (createDto.visitors && createDto.visitors.length > 0) {
+      if (typeof createDto.visitors[0] === 'string') {
+        // String array format
+        allVisitors.push(
+          ...(createDto.visitors as string[]).map((name) => ({
+            visitorName: name,
+            visitorType: 'investor' as const,
+            company: undefined,
+          })),
+        );
+      } else {
+        // Object array format
+        allVisitors.push(
+          ...(
+            createDto.visitors as Array<{
+              visitorName: string;
+              visitorType?: 'investor' | 'broker';
+              company?: string;
+            }>
+          ).map((v) => ({
+            visitorName: v.visitorName,
+            visitorType: v.visitorType || ('investor' as const),
+            company: v.company,
+          })),
+        );
+      }
+    }
+
+    // Insert all visitors
+    if (allVisitors.length > 0) {
       await this.db.insert(irActivityVisitors).values(
-        createDto.visitors.map((v) => ({
+        allVisitors.map((v) => ({
           activityId,
           visitorName: v.visitorName,
           visitorType: v.visitorType,
@@ -502,8 +549,15 @@ export class IrService {
       description: activity.description || undefined,
       typePrimary: activity.typePrimary,
       typeSecondary: activity.typeSecondary || undefined,
-      kbs: activity.kbParticipants.map((p) => p.user.name),
-      visitors: activity.visitors.map((v) => v.visitorName),
+      kbs: [
+        ...activity.kbParticipants.map((p) => p.user.name),
+        ...activity.visitors
+          .filter((v) => v.visitorType === 'kb')
+          .map((v) => v.visitorName),
+      ],
+      visitors: activity.visitors
+        .filter((v) => v.visitorType !== 'kb')
+        .map((v) => v.visitorName),
       memo: activity.memo || undefined,
       contentHtml: activity.contentHtml || undefined,
       keywords: activity.keywords.map((k) => k.keyword),
@@ -610,7 +664,7 @@ export class IrService {
       .set(updateData)
       .where(eq(irActivities.id, id));
 
-    // Update KB participants if provided
+    // Update KB participants if provided (legacy format)
     if (updateDto.kbParticipants !== undefined) {
       await this.db
         .delete(irActivityKbParticipants)
@@ -627,13 +681,63 @@ export class IrService {
     }
 
     // Update visitors if provided
-    if (updateDto.visitors !== undefined) {
+    if (updateDto.kbs !== undefined || updateDto.visitors !== undefined) {
+      // Delete existing visitors
       await this.db
         .delete(irActivityVisitors)
         .where(eq(irActivityVisitors.activityId, id));
-      if (updateDto.visitors.length > 0) {
+
+      // Collect all new visitors
+      const allVisitors: Array<{
+        visitorName: string;
+        visitorType?: 'investor' | 'broker' | 'kb';
+        company?: string;
+      }> = [];
+
+      // Add KB staff as visitors
+      if (updateDto.kbs && updateDto.kbs.length > 0) {
+        allVisitors.push(
+          ...updateDto.kbs.map((name) => ({
+            visitorName: name,
+            visitorType: 'kb' as const,
+            company: undefined,
+          })),
+        );
+      }
+
+      // Add regular visitors
+      if (updateDto.visitors && updateDto.visitors.length > 0) {
+        if (typeof updateDto.visitors[0] === 'string') {
+          // String array format
+          allVisitors.push(
+            ...(updateDto.visitors as string[]).map((name) => ({
+              visitorName: name,
+              visitorType: 'investor' as const,
+              company: undefined,
+            })),
+          );
+        } else {
+          // Object array format
+          allVisitors.push(
+            ...(
+              updateDto.visitors as Array<{
+                visitorName: string;
+                visitorType?: 'investor' | 'broker';
+                company?: string;
+              }>
+            ).map((v) => ({
+              visitorName: v.visitorName,
+              visitorType: v.visitorType || ('investor' as const),
+              company: v.company,
+            })),
+          );
+        }
+      }
+
+      // Insert all visitors
+      if (allVisitors.length > 0) {
         await this.db.insert(irActivityVisitors).values(
-          updateDto.visitors.map((v) => ({
+          allVisitors.map((v) => ({
             activityId: id,
             visitorName: v.visitorName,
             visitorType: v.visitorType,
