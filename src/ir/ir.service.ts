@@ -222,7 +222,7 @@ export class IrService {
       logType: 'create',
       userId,
       userName: user?.name || 'Unknown',
-      message: `활동 생성: ${createDto.title}`,
+      message: `${user?.name || 'Unknown'} 님이 IR활동을 생성했습니다.`,
     });
 
     // Return the created activity
@@ -799,7 +799,7 @@ export class IrService {
       logType: 'update',
       userId,
       userName: user?.name || 'Unknown',
-      message: `활동 수정`,
+      message: `${user?.name || 'Unknown'} 님이 내용을 변경했습니다.`,
     });
 
     return this.findOne(id);
@@ -847,7 +847,7 @@ export class IrService {
       logType: 'status',
       userId,
       userName: user?.name || 'Unknown',
-      message: `상태 변경: ${existing.status} → ${statusDto.status}`,
+      message: `${user?.name || 'Unknown'} 님이 상태를 변경했습니다.`,
       oldValue: existing.status,
       newValue: statusDto.status,
     });
@@ -1000,7 +1000,7 @@ export class IrService {
       logType: 'sub_activity',
       userId,
       userName: user?.name || 'Unknown',
-      message: `세부 활동 추가: ${subDto.title}`,
+      message: `${user?.name || 'Unknown'} 님이 세부 활동을 추가했습니다.`,
     });
 
     const created = await (this.db.query as any).irSubActivities.findFirst({
