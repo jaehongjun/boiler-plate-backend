@@ -49,12 +49,29 @@ export class InvestorService {
   async getInvestorsTable(
     query: QueryInvestorsTableDto,
   ): Promise<InvestorTableResponse> {
+    const { year, quarter } = query;
+
+    // If year and quarter are not provided, fetch latest data for each investor
+    if (year === undefined || quarter === undefined) {
+      return this.getInvestorsTableLatest(query);
+    }
+
+    // Otherwise, use the original logic for a specific period
+    return this.getInvestorsTableByPeriod(query);
+  }
+
+  /**
+   * Get investors table for a specific period
+   */
+  private async getInvestorsTableByPeriod(
+    query: QueryInvestorsTableDto,
+  ): Promise<InvestorTableResponse> {
     const { year, quarter, includeChildren, page, pageSize } = query;
 
     // Build WHERE conditions
     const conditions: any[] = [
-      eq(investorSnapshots.year, year),
-      eq(investorSnapshots.quarter, quarter),
+      eq(investorSnapshots.year, year!),
+      eq(investorSnapshots.quarter, quarter!),
     ];
 
     // Additional filters
@@ -106,7 +123,7 @@ export class InvestorService {
 
     if (parentIds.length === 0) {
       return {
-        period: { year, quarter },
+        period: { year: year!, quarter: quarter! },
         page,
         pageSize,
         total: 0,
@@ -148,8 +165,8 @@ export class InvestorService {
       .leftJoin(countries, eq(investors.countryCode, countries.code))
       .where(
         and(
-          eq(investorSnapshots.year, year),
-          eq(investorSnapshots.quarter, quarter),
+          eq(investorSnapshots.year, year!),
+          eq(investorSnapshots.quarter, quarter!),
           or(
             // Parent investors
             sql`${investors.id} IN (${sql.join(
@@ -253,7 +270,242 @@ export class InvestorService {
     const total = totalCountResult[0]?.count || 0;
 
     return {
-      period: { year, quarter },
+      period: { year: year!, quarter: quarter! },
+      page,
+      pageSize,
+      total,
+      rows,
+    };
+  }
+
+  /**
+   * Get investors table with latest data for each investor
+   */
+  private async getInvestorsTableLatest(
+    query: QueryInvestorsTableDto,
+  ): Promise<InvestorTableResponse> {
+    const { includeChildren, page, pageSize } = query;
+
+    // Step 1: Get latest snapshot for each parent investor using DISTINCT ON
+    // First, find parent IDs with their latest snapshots
+    const latestParentSnapshotsQuery = sql`
+      WITH latest_parent_snapshots AS (
+        SELECT DISTINCT ON (s.investor_id)
+          s.id as snapshot_id,
+          s.investor_id,
+          s.year,
+          s.quarter,
+          s.group_rank,
+          s.group_child_count,
+          s.s_over_o,
+          s.ord,
+          s.adr,
+          s.investor_type,
+          s.style_tag,
+          s.style_note,
+          s.turnover,
+          s.orientation,
+          s.last_activity_at
+        FROM investor_snapshots s
+        INNER JOIN investors i ON i.id = s.investor_id
+        WHERE i.is_group_representative = true
+          ${query.country ? sql`AND i.country_code = ${query.country}` : sql``}
+          ${query.search ? sql`AND (i.name ILIKE ${`%${query.search}%`} OR i.city ILIKE ${`%${query.search}%`})` : sql``}
+          ${query.orientation ? sql`AND s.orientation = ${query.orientation}` : sql``}
+          ${query.turnover ? sql`AND s.turnover = ${query.turnover}` : sql``}
+          ${query.investorType ? sql`AND s.investor_type = ${query.investorType}` : sql``}
+          ${query.styleTag ? sql`AND s.style_tag = ${query.styleTag}` : sql``}
+        ORDER BY s.investor_id, s.year DESC, s.quarter DESC
+      )
+      SELECT
+        lps.*,
+        i.id as investor_id,
+        i.name,
+        i.country_code,
+        i.city,
+        i.parent_id,
+        i.is_group_representative,
+        c.name_ko as country_name_ko,
+        c.name_en as country_name_en
+      FROM latest_parent_snapshots lps
+      INNER JOIN investors i ON i.id = lps.investor_id
+      LEFT JOIN countries c ON c.code = i.country_code
+      ORDER BY lps.group_rank ASC
+      LIMIT ${pageSize}
+      OFFSET ${(page - 1) * pageSize}
+    `;
+
+    const parentResults = await this.db.execute(latestParentSnapshotsQuery);
+    const parentRows = parentResults as any[];
+
+    if (parentRows.length === 0) {
+      return {
+        period: null, // Mixed periods
+        page,
+        pageSize,
+        total: 0,
+        rows: [],
+      };
+    }
+
+    // Extract parent IDs
+    const parentIdList = parentRows.map((p) => p.investor_id);
+
+    // Step 2: If includeChildren, fetch latest snapshots for children
+    let childrenData: any[] = [];
+    if (includeChildren && parentIdList.length > 0) {
+      const latestChildSnapshotsQuery = sql`
+        SELECT DISTINCT ON (s.investor_id)
+          s.id as snapshot_id,
+          s.investor_id,
+          s.year,
+          s.quarter,
+          s.group_rank,
+          s.group_child_count,
+          s.s_over_o,
+          s.ord,
+          s.adr,
+          s.investor_type,
+          s.style_tag,
+          s.style_note,
+          s.turnover,
+          s.orientation,
+          s.last_activity_at,
+          i.id as investor_id,
+          i.name,
+          i.country_code,
+          i.city,
+          i.parent_id,
+          i.is_group_representative,
+          c.name_ko as country_name_ko,
+          c.name_en as country_name_en
+        FROM investor_snapshots s
+        INNER JOIN investors i ON i.id = s.investor_id
+        LEFT JOIN countries c ON c.code = i.country_code
+        WHERE i.parent_id IN (${sql.join(
+          parentIdList.map((id) => sql`${id}`),
+          sql`, `,
+        )})
+        ORDER BY s.investor_id, s.year DESC, s.quarter DESC
+      `;
+
+      const childResults = await this.db.execute(latestChildSnapshotsQuery);
+      childrenData = childResults as any[];
+    }
+
+    // Step 3: Build the response structure
+    const parentMap = new Map<number, any>();
+    const childrenMap = new Map<number, any[]>();
+
+    // Process parents
+    for (const row of parentRows) {
+      const investor = {
+        id: row.investor_id,
+        name: row.name,
+        country: {
+          code: row.country_code,
+          name: row.country_name_ko || row.country_name_en || '-',
+          city: row.city || undefined,
+        },
+      };
+
+      const metrics = {
+        sOverO: row.s_over_o,
+        ord: row.ord,
+        adr: row.adr,
+        investorType: row.investor_type,
+        style: {
+          tag: row.style_tag,
+          note: row.style_note,
+        },
+        turnover: row.turnover,
+        orientation: row.orientation,
+        lastActivityAt: row.last_activity_at
+          ? new Date(row.last_activity_at).toISOString()
+          : null,
+      };
+
+      parentMap.set(row.investor_id, {
+        rowType: 'PARENT' as const,
+        group: {
+          rank: row.group_rank,
+          childCount: row.group_child_count,
+        },
+        investor,
+        metrics,
+      });
+    }
+
+    // Process children
+    for (const row of childrenData) {
+      const parentId = row.parent_id;
+      const investor = {
+        id: row.investor_id,
+        name: row.name,
+        country: {
+          code: row.country_code,
+          name: row.country_name_ko || row.country_name_en || '-',
+          city: row.city || undefined,
+        },
+      };
+
+      const metrics = {
+        sOverO: row.s_over_o,
+        ord: row.ord,
+        adr: row.adr,
+        investorType: row.investor_type,
+        style: {
+          tag: row.style_tag,
+          note: row.style_note,
+        },
+        turnover: row.turnover,
+        orientation: row.orientation,
+        lastActivityAt: row.last_activity_at
+          ? new Date(row.last_activity_at).toISOString()
+          : null,
+      };
+
+      if (!childrenMap.has(parentId)) {
+        childrenMap.set(parentId, []);
+      }
+      childrenMap.get(parentId)!.push({
+        rowType: 'CHILD' as const,
+        parentId,
+        investor,
+        metrics,
+      });
+    }
+
+    // Step 4: Build final rows array
+    const rows: InvestorTableRow[] = [];
+
+    for (const [parentId, parentRow] of parentMap.entries()) {
+      rows.push(parentRow);
+
+      // Add children
+      const children = childrenMap.get(parentId) || [];
+      rows.push(...children);
+    }
+
+    // Get total count of parents
+    const totalCountQuery = sql`
+      SELECT COUNT(DISTINCT i.id)::int as count
+      FROM investors i
+      INNER JOIN investor_snapshots s ON s.investor_id = i.id
+      WHERE i.is_group_representative = true
+        ${query.country ? sql`AND i.country_code = ${query.country}` : sql``}
+        ${query.search ? sql`AND (i.name ILIKE ${`%${query.search}%`} OR i.city ILIKE ${`%${query.search}%`})` : sql``}
+        ${query.orientation ? sql`AND s.orientation = ${query.orientation}` : sql``}
+        ${query.turnover ? sql`AND s.turnover = ${query.turnover}` : sql``}
+        ${query.investorType ? sql`AND s.investor_type = ${query.investorType}` : sql``}
+        ${query.styleTag ? sql`AND s.style_tag = ${query.styleTag}` : sql``}
+    `;
+
+    const totalResult = await this.db.execute(totalCountQuery);
+    const total = (totalResult[0] as any)?.count || 0;
+
+    return {
+      period: null, // Mixed periods (each row has its own latest period)
       page,
       pageSize,
       total,

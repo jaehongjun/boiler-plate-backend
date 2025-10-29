@@ -42,6 +42,13 @@ export class InvestorOptimizedService {
   ): Promise<InvestorTableResponse> {
     const { year, quarter, includeChildren, page, pageSize } = query;
 
+    // If year and quarter are not provided, return error (optimized service requires period)
+    if (year === undefined || quarter === undefined) {
+      throw new Error(
+        'Year and quarter are required for optimized service. Use the main service for latest data queries.',
+      );
+    }
+
     // Build WHERE conditions
     const conditions: any[] = [
       eq(investorSnapshots.year, year),
@@ -97,7 +104,7 @@ export class InvestorOptimizedService {
 
     if (parentIds.length === 0) {
       return {
-        period: { year, quarter },
+        period: { year: year!, quarter: quarter! },
         page,
         pageSize,
         total: 0,
@@ -244,7 +251,7 @@ export class InvestorOptimizedService {
     const total = totalCountResult[0]?.count || 0;
 
     return {
-      period: { year, quarter },
+      period: { year: year!, quarter: quarter! },
       page,
       pageSize,
       total,

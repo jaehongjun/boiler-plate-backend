@@ -54,7 +54,7 @@ export interface InvestorTableResponse {
   period: {
     year: number;
     quarter: number;
-  };
+  } | null; // null when fetching latest data for each investor (mixed periods)
   page: number;
   pageSize: number;
   total: number;

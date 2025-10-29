@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 // Query DTO for investor table view
 export const queryInvestorsTableSchema = z.object({
-  // Period (required)
-  year: z.coerce.number().int().min(2000).max(2100),
-  quarter: z.coerce.number().int().min(1).max(4),
+  // Period (optional - if not provided, fetches latest data for each investor)
+  year: z.coerce.number().int().min(2000).max(2100).optional(),
+  quarter: z.coerce.number().int().min(1).max(4).optional(),
 
   // Filters
   search: z.string().optional(), // 투자자명/국가/도시 검색
