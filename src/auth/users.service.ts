@@ -1,18 +1,10 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { eq, and } from 'drizzle-orm';
 import { DATABASE_CONNECTION } from '../database/database.module';
-import {
-  users,
-  favorites,
-  priceAlerts,
-  refreshTokens,
-} from '../database/schemas/users';
+import { users, refreshTokens } from '../database/schemas/users';
 import type {
   User,
   NewUser,
-  Favorite,
-  PriceAlert,
-  NewPriceAlert,
   RefreshToken,
 } from '../database/schemas/users';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -78,66 +70,6 @@ export class UsersService {
     }
 
     return user;
-  }
-
-  // 즐겨찾기 관련
-  async getFavorites(userId: string): Promise<string[]> {
-    const userFavorites = await this.db
-      .select({ symbol: favorites.symbol })
-      .from(favorites)
-      .where(eq(favorites.userId, userId));
-
-    return userFavorites.map((f) => f.symbol);
-  }
-
-  async addToFavorites(userId: string, symbol: string): Promise<Favorite> {
-    const [favorite] = await this.db
-      .insert(favorites)
-      .values({ userId, symbol })
-      .returning();
-
-    return favorite;
-  }
-
-  async removeFromFavorites(userId: string, symbol: string): Promise<void> {
-    await this.db
-      .delete(favorites)
-      .where(and(eq(favorites.userId, userId), eq(favorites.symbol, symbol)));
-  }
-
-  async isFavorite(userId: string, symbol: string): Promise<boolean> {
-    const [favorite] = await this.db
-      .select()
-      .from(favorites)
-      .where(and(eq(favorites.userId, userId), eq(favorites.symbol, symbol)))
-      .limit(1);
-
-    return !!favorite;
-  }
-
-  // 가격 알림 관련
-  getPriceAlerts(userId: string): Promise<PriceAlert[]> {
-    return this.db
-      .select()
-      .from(priceAlerts)
-      .where(
-        and(eq(priceAlerts.userId, userId), eq(priceAlerts.isActive, true)),
-      );
-  }
-
-  async createPriceAlert(
-    userId: string,
-    alertData: Pick<NewPriceAlert, 'symbol' | 'targetPrice' | 'condition'>,
-  ): Promise<PriceAlert> {
-    const [alert] = await this.db
-      .insert(priceAlerts)
-      .values({
-        userId,
-        ...alertData,
-      })
-      .returning();
-
-    return alert;
   }
 
   // 리프레시 토큰 관련

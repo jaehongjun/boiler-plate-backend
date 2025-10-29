@@ -7,11 +7,13 @@ export const createIrSubActivitySchema = z.object({
   title: z.string().min(1).max(255),
   startDatetime: z.string().datetime().optional(),
   endDatetime: z.string().datetime().optional(),
-  status: z.enum(['예정', '진행중', '완료', '중단']).default('예정'),
+  status: z
+    .enum(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'SUSPENDED'])
+    .default('SCHEDULED'),
 
   // Calendar Display
   allDay: z.boolean().default(false).optional(),
-  category: z.enum(['내부', '외부', '휴가', '공휴일']).optional(),
+  category: z.enum(['INTERNAL', 'EXTERNAL', 'VACATION', 'HOLIDAY']).optional(),
   location: z.string().max(255).optional(),
   description: z.string().optional(),
 
@@ -58,11 +60,13 @@ export const createIrActivitySchema = z.object({
   title: z.string().min(1).max(255),
   startDatetime: z.string().datetime(),
   endDatetime: z.string().datetime().optional(),
-  status: z.enum(['예정', '진행중', '완료', '중단']).default('예정'),
+  status: z
+    .enum(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'SUSPENDED'])
+    .default('SCHEDULED'),
 
   // Calendar Display
   allDay: z.boolean().default(false),
-  category: z.enum(['내부', '외부', '휴가', '공휴일']),
+  category: z.enum(['INTERNAL', 'EXTERNAL', 'VACATION', 'HOLIDAY']),
   location: z.string().max(255).optional(),
   description: z.string().optional(),
 

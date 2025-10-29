@@ -5,9 +5,6 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
-import { PortfolioModule } from './portfolio/portfolio.module';
-import { CrmModule } from './crm/crm.module';
-import { CalendarModule } from './calendar/calendar.module';
 import { FilesModule } from './files/files.module';
 import { IrModule } from './ir/ir.module';
 import { InvestorModule } from './investor/investor.module';
@@ -25,9 +22,6 @@ import { InvestorModule } from './investor/investor.module';
     ]),
     DatabaseModule,
     AuthModule,
-    PortfolioModule,
-    CrmModule,
-    CalendarModule,
     FilesModule,
     IrModule,
     InvestorModule,

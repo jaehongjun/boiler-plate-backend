@@ -13,21 +13,7 @@ import { relations } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { users } from './users';
 
-// Enums
-export const irActivityStatusEnum = pgEnum('ir_activity_status', [
-  '예정',
-  '진행중',
-  '완료',
-  '중단',
-]);
-
-export const irActivityCategoryEnum = pgEnum('ir_activity_category', [
-  '내부',
-  '외부',
-  '휴가',
-  '공휴일',
-]);
-
+// Log Type Enum (Keep this for activity logging)
 export const irLogTypeEnum = pgEnum('ir_log_type', [
   'create',
   'update',
@@ -47,11 +33,11 @@ export const irActivities = pgTable('ir_activities', {
   title: varchar('title', { length: 255 }).notNull(),
   startDatetime: timestamp('start_datetime', { withTimezone: true }).notNull(),
   endDatetime: timestamp('end_datetime', { withTimezone: true }),
-  status: irActivityStatusEnum('status').notNull().default('예정'),
+  status: varchar('status', { length: 50 }).notNull().default('SCHEDULED'),
 
   // Calendar Display
   allDay: boolean('all_day').default(false),
-  category: irActivityCategoryEnum('category').notNull(),
+  category: varchar('category', { length: 50 }).notNull(),
   location: varchar('location', { length: 255 }),
   description: text('description'),
 
@@ -88,7 +74,7 @@ export const irSubActivities = pgTable('ir_sub_activities', {
   // Core Information
   title: varchar('title', { length: 255 }).notNull(),
   ownerId: uuid('owner_id').references(() => users.id),
-  status: irActivityStatusEnum('status').notNull().default('예정'),
+  status: varchar('status', { length: 50 }).notNull().default('SCHEDULED'),
 
   // Optional dates (inherits from parent if null)
   startDatetime: timestamp('start_datetime', { withTimezone: true }),
@@ -96,7 +82,7 @@ export const irSubActivities = pgTable('ir_sub_activities', {
 
   // Calendar Display (optional - can inherit from parent)
   allDay: boolean('all_day').default(false),
-  category: irActivityCategoryEnum('category'),
+  category: varchar('category', { length: 50 }),
   location: varchar('location', { length: 255 }),
   description: text('description'),
 

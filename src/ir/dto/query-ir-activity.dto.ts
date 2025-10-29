@@ -4,8 +4,12 @@ import { z } from 'zod';
 export const queryIrActivitiesSchema = z.object({
   start: z.string().datetime(),
   end: z.string().datetime(),
-  status: z.enum(['예정', '진행중', '완료', '중단', '전체']).optional(),
-  category: z.enum(['내부', '외부', '휴가', '공휴일']).optional(),
+  status: z
+    .enum(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'SUSPENDED', 'ALL'])
+    .optional(),
+  category: z
+    .enum(['INTERNAL', 'EXTERNAL', 'VACATION', 'HOLIDAY'])
+    .optional(),
   sortBy: z
     .enum(['startDatetime', 'updatedAt', 'title', 'status'])
     .optional()

@@ -47,13 +47,13 @@ async function main() {
       title: '정기 IR 미팅',
       startDatetime: new Date('2025-10-22T01:00:00Z'),
       endDatetime: new Date('2025-10-24T09:00:00Z'),
-      status: '예정',
+      status: 'SCHEDULED',
       allDay: false,
-      category: '외부',
+      category: 'EXTERNAL',
       location: '서울 본사 회의실',
       description: '분기 실적 발표 및 투자자 미팅',
       typePrimary: 'NDR',
-      typeSecondary: '정기미팅',
+      typeSecondary: 'STRATEGY_MEETING',
       memo: '주요 논의사항: Q3 실적, 향후 전략',
     },
     {
@@ -61,13 +61,13 @@ async function main() {
       title: '투자 브리핑',
       startDatetime: new Date('2025-10-23T02:00:00Z'),
       endDatetime: new Date('2025-10-23T05:00:00Z'),
-      status: '예정',
+      status: 'SCHEDULED',
       allDay: false,
-      category: '외부',
+      category: 'EXTERNAL',
       location: '여의도 금융센터',
       description: '주요 투자 브리핑 세션',
-      typePrimary: '브리핑',
-      typeSecondary: '정기',
+      typePrimary: 'CONFERENCE_CALL',
+      typeSecondary: 'GROUP_MEETING',
     },
   ]);
 
@@ -77,14 +77,14 @@ async function main() {
       id: 'sub-sample-001-1',
       parentActivityId: ACT1,
       title: 'Morgan Capital 미팅',
-      status: '예정',
+      status: 'SCHEDULED',
       displayOrder: 0,
     },
     {
       id: 'sub-sample-001-2',
       parentActivityId: ACT1,
       title: '투자 계약서 검토',
-      status: '예정',
+      status: 'SCHEDULED',
       displayOrder: 1,
     },
   ]);
@@ -118,25 +118,17 @@ async function main() {
     { activityId: ACT1, keyword: '투자전략', displayOrder: 2 },
   ]);
 
-  // Initial logs (simple, no user linkage)
-  await db.insert(irActivityLogs).values([
-    {
-      id: generateId('log'),
-      activityId: ACT1,
-      logType: 'create',
-      userId: '00000000-0000-0000-0000-000000000000', // placeholder UUID
-      userName: '시스템',
-      message: '활동 생성: 정기 IR 미팅',
-    },
-    {
-      id: generateId('log'),
-      activityId: ACT2,
-      logType: 'create',
-      userId: '00000000-0000-0000-0000-000000000000',
-      userName: '시스템',
-      message: '활동 생성: 투자 브리핑',
-    },
-  ]);
+  // Initial logs (skip - requires valid user)
+  // await db.insert(irActivityLogs).values([
+  //   {
+  //     id: generateId('log'),
+  //     activityId: ACT1,
+  //     logType: 'create',
+  //     userId: '00000000-0000-0000-0000-000000000000',
+  //     userName: '시스템',
+  //     message: '활동 생성: 정기 IR 미팅',
+  //   },
+  // ]);
 
   console.log('✅ Seeded sample IR activities:', [ACT1, ACT2]);
 

@@ -294,7 +294,7 @@ export class IrService {
       conditions.push(eq(irActivities.category, query.category));
     }
 
-    if (query.status && query.status !== '전체') {
+    if (query.status && query.status !== 'ALL') {
       conditions.push(eq(irActivities.status, query.status));
     }
 
@@ -312,6 +312,7 @@ export class IrService {
       category: activity.category,
       location: activity.location || undefined,
       description: activity.description || undefined,
+      status: activity.status,
     }));
 
     return { events };
@@ -335,7 +336,7 @@ export class IrService {
       conditions.push(eq(irActivities.category, query.category));
     }
 
-    if (query.status && query.status !== '전체') {
+    if (query.status && query.status !== 'ALL') {
       conditions.push(eq(irActivities.status, query.status));
     }
 
@@ -425,7 +426,7 @@ export class IrService {
       lte(irActivities.startDatetime, endDate),
     ];
 
-    if (query.status && query.status !== '전체') {
+    if (query.status && query.status !== 'ALL') {
       conditions.push(eq(irActivities.status, query.status));
     }
 
@@ -931,7 +932,7 @@ export class IrService {
     };
 
     // Set resolvedAt if status is completed
-    if (statusDto.status === '완료') {
+    if (statusDto.status === 'COMPLETED') {
       updateData.resolvedAt = new Date();
     }
 

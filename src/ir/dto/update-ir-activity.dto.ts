@@ -49,7 +49,7 @@ export type UpdateIrActivityDto = z.infer<typeof baseUpdateSchema>;
 
 // Update status DTO
 export const updateIrActivityStatusSchema = z.object({
-  status: z.enum(['예정', '진행중', '완료', '중단']),
+  status: z.enum(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'SUSPENDED']),
 });
 
 export type UpdateIrActivityStatusDto = z.infer<

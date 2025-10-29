@@ -1,15 +1,19 @@
 // Response types for IR Activities
+import type {
+  IrActivityStatus,
+  IrActivityCategory,
+} from '../constants/ir-activity.constants';
 
 export interface IrActivitySubActivityResponse {
   id: string;
   title: string;
   owner?: string;
-  status: '예정' | '진행중' | '완료' | '중단';
+  status: IrActivityStatus;
   startDatetime?: string;
   endDatetime?: string;
   // Extended optional fields to align with activity structure
   allDay?: boolean;
-  category?: '내부' | '외부' | '휴가' | '공휴일';
+  category?: IrActivityCategory;
   location?: string;
   description?: string;
   typePrimary?: string;
@@ -45,11 +49,11 @@ export interface IrActivityEntityResponse {
   title: string;
   startISO: string;
   endISO?: string;
-  status: '예정' | '진행중' | '완료' | '중단';
+  status: IrActivityStatus;
 
   // Calendar display
   allDay?: boolean;
-  category: '내부' | '외부' | '휴가' | '공휴일';
+  category: IrActivityCategory;
   location?: string;
   description?: string;
 
@@ -86,9 +90,10 @@ export interface IrCalendarEventResponse {
   start: string; // ISO datetime
   end?: string; // ISO datetime
   allDay?: boolean;
-  category: '내부' | '외부' | '휴가' | '공휴일';
+  category: IrActivityCategory;
   location?: string;
   description?: string;
+  status: IrActivityStatus;
 }
 
 // Timeline activity (with sub-activities for expansion)
@@ -97,7 +102,7 @@ export interface IrTimelineActivityResponse {
   title: string; // Main activity title
   startISO: string;
   endISO: string;
-  status: '예정' | '진행중' | '완료' | '중단';
+  status: IrActivityStatus;
   subActivities?: IrActivitySubActivityResponse[];
 }
 
@@ -108,8 +113,8 @@ export interface IrActivityListItemResponse {
   startISO: string; // 일시
   endISO?: string;
   typePrimary: string; // 유형 (One-on-One, Conference Call 등)
-  status: '예정' | '진행중' | '완료' | '중단';
-  category: '내부' | '외부' | '휴가' | '공휴일';
+  status: IrActivityStatus;
+  category: IrActivityCategory;
 
   // 참가자 정보
   investors: string[]; // 투자자
