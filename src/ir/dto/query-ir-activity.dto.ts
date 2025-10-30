@@ -7,9 +7,7 @@ export const queryIrActivitiesSchema = z.object({
   status: z
     .enum(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'SUSPENDED', 'ALL'])
     .optional(),
-  category: z
-    .enum(['INTERNAL', 'EXTERNAL', 'VACATION', 'HOLIDAY'])
-    .optional(),
+  category: z.enum(['INTERNAL', 'EXTERNAL', 'VACATION', 'HOLIDAY']).optional(),
   sortBy: z
     .enum(['startDatetime', 'updatedAt', 'title', 'status'])
     .optional()

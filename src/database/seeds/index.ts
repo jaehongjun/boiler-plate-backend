@@ -11,15 +11,15 @@ import {
   irSubActivities,
   irActivityKeywords,
   irActivityVisitors,
-  irActivityLogs,
+  // irActivityLogs, // Currently unused, kept for future use
 } from '../../database/schemas/ir.schema';
-import { eq, inArray } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 
-function generateId(prefix: string): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 9);
-  return `${prefix}-${timestamp}-${random}`;
-}
+// function generateId(prefix: string): string {
+//   const timestamp = Date.now();
+//   const random = Math.random().toString(36).substring(2, 9);
+//   return `${prefix}-${timestamp}-${random}`;
+// }
 
 async function main() {
   const url = process.env.DATABASE_URL;

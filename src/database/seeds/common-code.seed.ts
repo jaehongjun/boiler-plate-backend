@@ -197,9 +197,7 @@ async function main() {
         .select()
         .from(commonCodes)
         .where(eq(commonCodes.codeGroup, code.codeGroup))
-        .then((rows) =>
-          rows.find((row) => row.codeKey === code.codeKey),
-        );
+        .then((rows) => rows.find((row) => row.codeKey === code.codeKey));
 
       if (existing) {
         // Update existing code

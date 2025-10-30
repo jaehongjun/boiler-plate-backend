@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../database/database.module';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { eq, and, desc, sql, or, ilike, isNull } from 'drizzle-orm';
+import { eq, and, desc, sql, or, ilike } from 'drizzle-orm';
 import {
   investors,
   investorSnapshots,
@@ -821,7 +821,7 @@ export class InvestorService {
   async updateInvestor(
     id: number,
     updateDto: UpdateInvestorDto,
-    userId: string,
+    _userId: string,
   ): Promise<InvestorDetailResponse> {
     const existing = await (this.db.query as any).investors.findFirst({
       where: eq(investors.id, id),

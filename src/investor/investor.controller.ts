@@ -6,8 +6,6 @@ import {
   Patch,
   Query,
   UseGuards,
-  HttpCode,
-  HttpStatus,
   ParseIntPipe,
 } from '@nestjs/common';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';

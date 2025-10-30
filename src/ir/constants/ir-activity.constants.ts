@@ -42,13 +42,12 @@ export const IR_ACTIVITY_CATEGORY = {
 export type IrActivityCategory =
   (typeof IR_ACTIVITY_CATEGORY)[keyof typeof IR_ACTIVITY_CATEGORY];
 
-export const IR_ACTIVITY_CATEGORY_LABELS: Record<IrActivityCategory, string> =
-  {
-    [IR_ACTIVITY_CATEGORY.INTERNAL]: '내부',
-    [IR_ACTIVITY_CATEGORY.EXTERNAL]: '외부',
-    [IR_ACTIVITY_CATEGORY.VACATION]: '휴가',
-    [IR_ACTIVITY_CATEGORY.HOLIDAY]: '공휴일',
-  };
+export const IR_ACTIVITY_CATEGORY_LABELS: Record<IrActivityCategory, string> = {
+  [IR_ACTIVITY_CATEGORY.INTERNAL]: '내부',
+  [IR_ACTIVITY_CATEGORY.EXTERNAL]: '외부',
+  [IR_ACTIVITY_CATEGORY.VACATION]: '휴가',
+  [IR_ACTIVITY_CATEGORY.HOLIDAY]: '공휴일',
+};
 
 // ==========================================
 // Activity Type Primary (활동 유형 - 대분류)
@@ -116,8 +115,7 @@ export const IR_ACTIVITY_LIMITS = {
 // Conversion to bytes for validation
 export const IR_ACTIVITY_LIMITS_BYTES = {
   MAX_FILE_SIZE: IR_ACTIVITY_LIMITS.MAX_FILE_SIZE_MB * 1024 * 1024,
-  MAX_TOTAL_FILE_SIZE:
-    IR_ACTIVITY_LIMITS.MAX_TOTAL_FILE_SIZE_MB * 1024 * 1024,
+  MAX_TOTAL_FILE_SIZE: IR_ACTIVITY_LIMITS.MAX_TOTAL_FILE_SIZE_MB * 1024 * 1024,
 } as const;
 
 // ==========================================
@@ -130,9 +128,7 @@ export const IR_ACTIVITY_LIMITS_BYTES = {
 export function isValidIrActivityStatus(
   status: string,
 ): status is IrActivityStatus {
-  return Object.values(IR_ACTIVITY_STATUS).includes(
-    status as IrActivityStatus,
-  );
+  return Object.values(IR_ACTIVITY_STATUS).includes(status as IrActivityStatus);
 }
 
 /**

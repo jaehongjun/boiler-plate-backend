@@ -2,11 +2,7 @@ import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { eq, and } from 'drizzle-orm';
 import { DATABASE_CONNECTION } from '../database/database.module';
 import { users, refreshTokens } from '../database/schemas/users';
-import type {
-  User,
-  NewUser,
-  RefreshToken,
-} from '../database/schemas/users';
+import type { User, NewUser, RefreshToken } from '../database/schemas/users';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import * as schema from '../database/schemas/users';
 

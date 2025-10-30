@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../database/database.module';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { eq, and, desc, sql, or, ilike } from 'drizzle-orm';
@@ -104,7 +104,7 @@ export class InvestorOptimizedService {
 
     if (parentIds.length === 0) {
       return {
-        period: { year: year!, quarter: quarter! },
+        period: { year: year, quarter: quarter },
         page,
         pageSize,
         total: 0,
@@ -251,7 +251,7 @@ export class InvestorOptimizedService {
     const total = totalCountResult[0]?.count || 0;
 
     return {
-      period: { year: year!, quarter: quarter! },
+      period: { year: year, quarter: quarter },
       page,
       pageSize,
       total,

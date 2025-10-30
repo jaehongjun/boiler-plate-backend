@@ -6,8 +6,8 @@ import { AppModule } from '../src/app.module';
 
 describe('InvestorController (e2e)', () => {
   let app: INestApplication<App>;
-  let authToken: string;
-  let testUserId: string;
+  let _authToken: string;
+  let _testUserId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({

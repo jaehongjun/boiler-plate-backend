@@ -7,7 +7,7 @@
  * - 순위별 필터링
  */
 
-import { desc, eq, and, isNull, sql } from 'drizzle-orm';
+import { desc, eq, and, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import {
   investors,

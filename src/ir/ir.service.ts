@@ -1,14 +1,14 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../database/database.module';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { eq, and, gte, lte } from 'drizzle-orm';
 import {
   irActivities,
   irSubActivities,
   irActivityKbParticipants,
   irActivityVisitors,
   irActivityKeywords,
-  irActivityAttachments,
+  // irActivityAttachments, // Kept for future use
   irActivityLogs,
   irSubActivityKbParticipants,
   irSubActivityVisitors,
@@ -19,7 +19,7 @@ import {
   CreateIrActivityDto,
   CreateIrSubActivityDto,
   UpdateIrActivityDto,
-  UpdateIrSubActivityDto,
+  // UpdateIrSubActivityDto, // Kept for future use
   UpdateIrActivityStatusDto,
   QueryIrActivitiesDto,
 } from './dto';
@@ -963,7 +963,7 @@ export class IrService {
   /**
    * Delete an IR activity
    */
-  async remove(id: string, userId: string): Promise<void> {
+  async remove(id: string, _userId: string): Promise<void> {
     const existing = await (this.db.query as any).irActivities.findFirst({
       where: eq(irActivities.id, id),
     });
