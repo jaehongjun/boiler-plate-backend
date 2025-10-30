@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { FilesModule } from './files/files.module';
 import { IrModule } from './ir/ir.module';
 import { InvestorModule } from './investor/investor.module';
+import { BusinessTripModule } from './business-trip/business-trip.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { InvestorModule } from './investor/investor.module';
     FilesModule,
     IrModule,
     InvestorModule,
+    BusinessTripModule,
   ],
   controllers: [AppController],
   providers: [AppService],
