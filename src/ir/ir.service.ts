@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../database/database.module';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { eq, and, gte, lte } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, count, desc } from 'drizzle-orm';
 import {
   irActivities,
   irSubActivities,
@@ -22,6 +22,8 @@ import {
   // UpdateIrSubActivityDto, // Kept for future use
   UpdateIrActivityStatusDto,
   QueryIrActivitiesDto,
+  QueryIrInsightsDto,
+  IrInsightsResponse,
 } from './dto';
 import {
   IrActivityEntityResponse,
@@ -1178,6 +1180,807 @@ export class IrService {
       typeSecondary: created!.typeSecondary || undefined,
       memo: created!.memo || undefined,
       contentHtml: created!.contentHtml || undefined,
+    };
+  }
+
+  /**
+   * Get IR Insights
+   * Aggregates activity data for analytics dashboard
+   */
+  async getInsights(query: QueryIrInsightsDto): Promise<IrInsightsResponse> {
+    // Determine date range
+    const endDate = query.endISO
+      ? new Date(query.endISO)
+      : new Date(); // Default to now
+    const startDate = query.startISO
+      ? new Date(query.startISO)
+      : new Date(new Date().setFullYear(endDate.getFullYear() - 1)); // Default to 1 year ago
+
+    // Build base where clause for date filtering
+    const dateFilter = and(
+      gte(irActivities.startDatetime, startDate),
+      lte(irActivities.startDatetime, endDate),
+    );
+
+    // 1. Summary Statistics
+    const [summaryResult] = await this.db
+      .select({
+        totalActivities: count(irActivities.id),
+      })
+      .from(irActivities)
+      .where(dateFilter);
+
+    const [subActivitiesResult] = await this.db
+      .select({
+        totalSubActivities: count(irSubActivities.id),
+      })
+      .from(irSubActivities)
+      .innerJoin(
+        irActivities,
+        eq(irSubActivities.parentActivityId, irActivities.id),
+      )
+      .where(dateFilter);
+
+    const [investorsResult] = await this.db
+      .select({
+        uniqueInvestors: sql<number>`COUNT(DISTINCT ${irActivityVisitors.visitorName})`,
+        uniqueCompanies: sql<number>`COUNT(DISTINCT ${irActivityVisitors.company})`,
+      })
+      .from(irActivityVisitors)
+      .innerJoin(
+        irActivities,
+        eq(irActivityVisitors.activityId, irActivities.id),
+      )
+      .where(
+        and(
+          dateFilter,
+          eq(irActivityVisitors.visitorType, 'investor'),
+        ),
+      );
+
+    const [staffResult] = await this.db
+      .select({
+        activeKbStaff: sql<number>`COUNT(DISTINCT ${irActivityKbParticipants.userId})`,
+      })
+      .from(irActivityKbParticipants)
+      .innerJoin(
+        irActivities,
+        eq(irActivityKbParticipants.activityId, irActivities.id),
+      )
+      .where(dateFilter);
+
+    // 2. Activity Stats by Month
+    const monthlyStats = await this.db
+      .select({
+        period: sql<string>`TO_CHAR(${irActivities.startDatetime}, 'YYYY-MM')`,
+        total: count(irActivities.id),
+        scheduled: sql<number>`SUM(CASE WHEN ${irActivities.status} = '예정' THEN 1 ELSE 0 END)`,
+        inProgress: sql<number>`SUM(CASE WHEN ${irActivities.status} = '진행중' THEN 1 ELSE 0 END)`,
+        completed: sql<number>`SUM(CASE WHEN ${irActivities.status} = '완료' THEN 1 ELSE 0 END)`,
+        cancelled: sql<number>`SUM(CASE WHEN ${irActivities.status} = '중단' THEN 1 ELSE 0 END)`,
+      })
+      .from(irActivities)
+      .where(dateFilter)
+      .groupBy(sql`TO_CHAR(${irActivities.startDatetime}, 'YYYY-MM')`)
+      .orderBy(sql`TO_CHAR(${irActivities.startDatetime}, 'YYYY-MM')`);
+
+    // 3. Activity Stats by Quarter
+    const quarterlyStats = await this.db
+      .select({
+        period: sql<string>`TO_CHAR(${irActivities.startDatetime}, 'YYYY-"Q"Q')`,
+        total: count(irActivities.id),
+        scheduled: sql<number>`SUM(CASE WHEN ${irActivities.status} = '예정' THEN 1 ELSE 0 END)`,
+        inProgress: sql<number>`SUM(CASE WHEN ${irActivities.status} = '진행중' THEN 1 ELSE 0 END)`,
+        completed: sql<number>`SUM(CASE WHEN ${irActivities.status} = '완료' THEN 1 ELSE 0 END)`,
+        cancelled: sql<number>`SUM(CASE WHEN ${irActivities.status} = '중단' THEN 1 ELSE 0 END)`,
+      })
+      .from(irActivities)
+      .where(dateFilter)
+      .groupBy(sql`TO_CHAR(${irActivities.startDatetime}, 'YYYY-"Q"Q')`)
+      .orderBy(sql`TO_CHAR(${irActivities.startDatetime}, 'YYYY-"Q"Q')`);
+
+    // 4. Distribution by Type
+    const typeDistribution = await this.db
+      .select({
+        typePrimary: irActivities.typePrimary,
+        count: count(irActivities.id),
+      })
+      .from(irActivities)
+      .where(dateFilter)
+      .groupBy(irActivities.typePrimary)
+      .orderBy(desc(count(irActivities.id)));
+
+    const totalForTypePercentage = summaryResult.totalActivities;
+
+    // 5. Distribution by Category
+    const categoryDistribution = await this.db
+      .select({
+        category: irActivities.category,
+        count: count(irActivities.id),
+      })
+      .from(irActivities)
+      .where(dateFilter)
+      .groupBy(irActivities.category)
+      .orderBy(desc(count(irActivities.id)));
+
+    // 6. Status Overview
+    const statusOverview = await this.db
+      .select({
+        status: irActivities.status,
+        count: count(irActivities.id),
+      })
+      .from(irActivities)
+      .where(dateFilter)
+      .groupBy(irActivities.status)
+      .orderBy(desc(count(irActivities.id)));
+
+    // 7. Top Investors (by activity count)
+    const topInvestors = await this.db
+      .select({
+        visitorName: irActivityVisitors.visitorName,
+        company: irActivityVisitors.company,
+        activityCount: count(irActivityVisitors.activityId),
+        lastActivityDate: sql<string>`MAX(${irActivities.startDatetime})`,
+      })
+      .from(irActivityVisitors)
+      .innerJoin(
+        irActivities,
+        eq(irActivityVisitors.activityId, irActivities.id),
+      )
+      .where(
+        and(
+          dateFilter,
+          eq(irActivityVisitors.visitorType, 'investor'),
+        ),
+      )
+      .groupBy(irActivityVisitors.visitorName, irActivityVisitors.company)
+      .orderBy(desc(count(irActivityVisitors.activityId)))
+      .limit(10);
+
+    // 8. Staff Activity Ranking
+    const staffAsOwner = await this.db
+      .select({
+        userId: irActivities.ownerId,
+        count: count(irActivities.id),
+      })
+      .from(irActivities)
+      .where(and(dateFilter, sql`${irActivities.ownerId} IS NOT NULL`))
+      .groupBy(irActivities.ownerId);
+
+    const staffAsParticipant = await this.db
+      .select({
+        userId: irActivityKbParticipants.userId,
+        count: count(irActivityKbParticipants.activityId),
+      })
+      .from(irActivityKbParticipants)
+      .innerJoin(
+        irActivities,
+        eq(irActivityKbParticipants.activityId, irActivities.id),
+      )
+      .where(dateFilter)
+      .groupBy(irActivityKbParticipants.userId);
+
+    // Merge staff rankings
+    const staffMap = new Map<
+      string,
+      { userId: string; asOwner: number; asParticipant: number }
+    >();
+
+    staffAsOwner.forEach((s) => {
+      if (s.userId) {
+        staffMap.set(s.userId, {
+          userId: s.userId,
+          asOwner: s.count,
+          asParticipant: 0,
+        });
+      }
+    });
+
+    staffAsParticipant.forEach((s) => {
+      const existing = staffMap.get(s.userId);
+      if (existing) {
+        existing.asParticipant = s.count;
+      } else {
+        staffMap.set(s.userId, {
+          userId: s.userId,
+          asOwner: 0,
+          asParticipant: s.count,
+        });
+      }
+    });
+
+    // Fetch user names and sort
+    const staffWithNames = await Promise.all(
+      Array.from(staffMap.values()).map(async (staff) => {
+        const [user] = await this.db
+          .select({ name: users.name })
+          .from(users)
+          .where(eq(users.id, staff.userId));
+
+        return {
+          userId: staff.userId,
+          userName: user?.name || 'Unknown',
+          activityCount: staff.asOwner + staff.asParticipant,
+          asOwner: staff.asOwner,
+          asParticipant: staff.asParticipant,
+        };
+      }),
+    );
+
+    staffWithNames.sort((a, b) => b.activityCount - a.activityCount);
+
+    // 9. Top Keywords
+    const topKeywords = await this.db
+      .select({
+        keyword: irActivityKeywords.keyword,
+        count: count(irActivityKeywords.keyword),
+      })
+      .from(irActivityKeywords)
+      .innerJoin(
+        irActivities,
+        eq(irActivityKeywords.activityId, irActivities.id),
+      )
+      .where(dateFilter)
+      .groupBy(irActivityKeywords.keyword)
+      .orderBy(desc(count(irActivityKeywords.keyword)))
+      .limit(20);
+
+    // 10. Meeting Type Efficiency by Quarter
+    // Calculate current quarter and previous quarter
+    const currentQuarterEnd = endDate;
+    const currentQuarterStart = new Date(
+      currentQuarterEnd.getFullYear(),
+      Math.floor(currentQuarterEnd.getMonth() / 3) * 3,
+      1,
+    );
+
+    const previousQuarterEnd = new Date(currentQuarterStart);
+    previousQuarterEnd.setDate(previousQuarterEnd.getDate() - 1);
+    const previousQuarterStart = new Date(
+      previousQuarterEnd.getFullYear(),
+      Math.floor(previousQuarterEnd.getMonth() / 3) * 3,
+      1,
+    );
+
+    // Mock data for meeting type efficiency (TODO: Connect with real share change data)
+    const meetingTypes = ['대면미팅', '비대면미팅', 'NDR', '기타'];
+    const meetingTypeEfficiency = meetingTypes.map((meetingType) => {
+      // Mock share change rates - replace with actual data later
+      const mockRates: Record<string, { current: number; previous: number }> = {
+        '대면미팅': { current: 0.2, previous: 0.3 },
+        '비대면미팅': { current: 0.5, previous: 0.4 },
+        'NDR': { current: 0.8, previous: 0.6 },
+        '기타': { current: 0.2, previous: 0.15 },
+      };
+
+      return {
+        meetingType,
+        currentQuarter: {
+          count: 30 + Math.floor(Math.random() * 20), // Mock count
+          avgShareChangeRate: mockRates[meetingType]?.current || 0,
+        },
+        previousQuarter: {
+          count: 25 + Math.floor(Math.random() * 20), // Mock count
+          avgShareChangeRate: mockRates[meetingType]?.previous || 0,
+        },
+      };
+    });
+
+    // 11. Investor Responsiveness Heatmap
+    // Mock data for investor responsiveness (TODO: Connect with real investor data)
+    const investorStyles = [
+      'Growth',
+      'Momentum',
+      'Deep Value',
+      'ESG',
+      'GARP',
+      'Index',
+      'Factor',
+      'Smart Beta',
+      'Thematic',
+      'Event Driven',
+    ];
+    const strategies = ['Active', 'Passive', 'Opportunistic', 'Long-term'];
+
+    // Generate mock heatmap data
+    const investorResponsivenessCells = investorStyles.flatMap(
+      (style, styleIndex) =>
+        strategies.map((strategy, strategyIndex) => {
+          // Create pattern where certain combinations have higher values
+          let baseValue = 0.1;
+
+          // ESG + Long-term = high
+          if (style === 'ESG' && strategy === 'Long-term') baseValue = 1.0;
+          else if (style === 'ESG' && strategy === 'Opportunistic') baseValue = 0.5;
+          else if (style === 'GARP' && strategy === 'Long-term') baseValue = 0.8;
+          else if (style === 'GARP' && strategy === 'Opportunistic') baseValue = 0.8;
+          else if (style === 'Index' && strategy === 'Long-term') baseValue = 1.0;
+          else if (style === 'Index' && strategy === 'Passive') baseValue = 0.5;
+          else if (style === 'Factor' && strategy === 'Long-term') baseValue = 1.0;
+          else if (style === 'Factor' && strategy === 'Opportunistic') baseValue = 0.8;
+          else if (style === 'Smart Beta' && strategy === 'Long-term')
+            baseValue = 1.0;
+          else if (style === 'Smart Beta' && strategy === 'Opportunistic')
+            baseValue = 0.8;
+          else if (style === 'Thematic' && strategy === 'Long-term')
+            baseValue = 1.0;
+          else if (style === 'Thematic' && strategy === 'Opportunistic')
+            baseValue = 0.8;
+          else if (style === 'Event Driven' && strategy === 'Long-term')
+            baseValue = 1.0;
+          else if (style === 'Event Driven' && strategy === 'Opportunistic')
+            baseValue = 0.8;
+          else if (style === 'Deep Value' && strategy === 'Opportunistic')
+            baseValue = 0.5;
+          else if (strategy === 'Long-term') baseValue = 0.3;
+          else if (strategy === 'Opportunistic') baseValue = 0.3;
+
+          return {
+            investorStyle: style,
+            strategy: strategy,
+            value: baseValue,
+            shareChangeRate: baseValue * 0.12, // Mock rate
+            shareCountChange: baseValue > 0.5 ? 10200 : -10200, // Mock change
+            investorCount: Math.floor(baseValue * 20) + 5, // Mock count
+          };
+        }),
+    );
+
+    const investorResponsiveness = {
+      investorStyles,
+      strategies,
+      cells: investorResponsivenessCells,
+    };
+
+    // 12. Keyword and Event Impact
+    // Mock data for keyword/event correlation (TODO: Connect with real event data)
+    const quarters = [
+      '1Q22', '2Q22', '3Q22', '4Q22',
+      '1Q23', '2Q23', '3Q23', '4Q23',
+      '1Q24', '2Q24', '3Q24', '4Q24',
+    ];
+
+    const keywordEventImpact = {
+      quarters: quarters.map((quarter, index) => {
+        const isHighlighted = quarter === '3Q22';
+        const baseEventCount = 800 + Math.floor(Math.random() * 600);
+
+        return {
+          quarter,
+          previousQuarterEventCount: baseEventCount - 200,
+          currentQuarterEventCount: isHighlighted ? 2000 : baseEventCount,
+          stockPriceChange: isHighlighted ? -8.5 : (Math.random() * 10 - 5),
+          events: isHighlighted
+            ? [
+                {
+                  keyword: '주주환원',
+                  eventDate: '2022-10-01',
+                  eventName: '금리 정책 발표',
+                  stockPriceChange: -8.5,
+                },
+              ]
+            : [],
+        };
+      }),
+    };
+
+    // Build response
+    return {
+      summary: {
+        totalActivities: summaryResult.totalActivities,
+        totalSubActivities: subActivitiesResult.totalSubActivities,
+        uniqueInvestors: Number(investorsResult.uniqueInvestors || 0),
+        uniqueCompanies: Number(investorsResult.uniqueCompanies || 0),
+        activeKbStaff: Number(staffResult.activeKbStaff || 0),
+      },
+      activityStatsByMonth: monthlyStats.map((stat) => ({
+        period: stat.period,
+        total: stat.total,
+        byStatus: {
+          SCHEDULED: Number(stat.scheduled),
+          IN_PROGRESS: Number(stat.inProgress),
+          COMPLETED: Number(stat.completed),
+          CANCELLED: Number(stat.cancelled),
+        },
+      })),
+      activityStatsByQuarter: quarterlyStats.map((stat) => ({
+        period: stat.period,
+        total: stat.total,
+        byStatus: {
+          SCHEDULED: Number(stat.scheduled),
+          IN_PROGRESS: Number(stat.inProgress),
+          COMPLETED: Number(stat.completed),
+          CANCELLED: Number(stat.cancelled),
+        },
+      })),
+      distributionByType: typeDistribution.map((item) => ({
+        typePrimary: item.typePrimary,
+        count: item.count,
+        percentage:
+          totalForTypePercentage > 0
+            ? Math.round((item.count / totalForTypePercentage) * 100 * 10) / 10
+            : 0,
+      })),
+      distributionByCategory: categoryDistribution.map((item) => ({
+        category: item.category,
+        count: item.count,
+        percentage:
+          totalForTypePercentage > 0
+            ? Math.round((item.count / totalForTypePercentage) * 100 * 10) / 10
+            : 0,
+      })),
+      statusOverview: statusOverview.map((item) => ({
+        status: item.status,
+        count: item.count,
+        percentage:
+          totalForTypePercentage > 0
+            ? Math.round((item.count / totalForTypePercentage) * 100 * 10) / 10
+            : 0,
+      })),
+      topInvestors: topInvestors.map((item) => ({
+        visitorName: item.visitorName,
+        company: item.company,
+        activityCount: item.activityCount,
+        lastActivityDate: new Date(item.lastActivityDate).toISOString(),
+      })),
+      staffRanking: staffWithNames.slice(0, 10), // Top 10
+      topKeywords: topKeywords.map((item) => ({
+        keyword: item.keyword,
+        count: item.count,
+      })),
+      meetingTypeEfficiency,
+      investorResponsiveness,
+      keywordEventImpact,
+      networkEfficiency: this.generateMockNetworkEfficiency(),
+      regionalEfficiency: await this.generateMockRegionalEfficiencyMap(),
+      meetingShareCorrelation: this.generateMockMeetingShareCorrelation(),
+      eventMarketCorrelation: this.generateMockEventMarketCorrelation(),
+      irEfficiencyLeaderboard: this.generateMockIrEfficiencyLeaderboard(),
+      dateRange: {
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Generate mock network efficiency data
+   * TODO: Replace with real data from database
+   */
+  private generateMockNetworkEfficiency() {
+    const nodes = [
+      // Staff nodes
+      { id: 'staff-1', name: 'IR전무', type: 'staff' as const, size: 'large' as const, level: 'high' as const, avgShareChangeRate: 0.9 },
+      { id: 'staff-2', name: 'IR팀장', type: 'staff' as const, size: 'medium' as const, level: 'medium' as const, avgShareChangeRate: 0.6 },
+      { id: 'staff-3', name: 'IR대리', type: 'staff' as const, size: 'medium' as const, level: 'medium' as const, avgShareChangeRate: 0.4 },
+
+      // Broker nodes
+      { id: 'broker-1', name: 'B증권', type: 'broker' as const, size: 'large' as const, level: 'high' as const, avgShareChangeRate: 0.9 },
+      { id: 'broker-2', name: 'A증권', type: 'broker' as const, size: 'medium' as const, level: 'medium' as const, avgShareChangeRate: 0.5 },
+      { id: 'broker-3', name: 'C증권', type: 'broker' as const, size: 'medium' as const, level: 'medium' as const, avgShareChangeRate: 0.3 },
+
+      // Investor nodes
+      { id: 'investor-1', name: 'P사', type: 'investor' as const, size: 'small' as const, level: 'none' as const, avgShareChangeRate: 0.1 },
+      { id: 'investor-2', name: 'S사', type: 'investor' as const, size: 'medium' as const, level: 'high' as const, avgShareChangeRate: 0.7 },
+      { id: 'investor-3', name: 'Q사', type: 'investor' as const, size: 'small' as const, level: 'none' as const, avgShareChangeRate: 0.2 },
+      { id: 'investor-4', name: 'T사', type: 'investor' as const, size: 'medium' as const, level: 'high' as const, avgShareChangeRate: 0.8 },
+      { id: 'investor-5', name: 'R사', type: 'investor' as const, size: 'small' as const, level: 'none' as const, avgShareChangeRate: 0.1 },
+      { id: 'investor-6', name: 'U사', type: 'investor' as const, size: 'medium' as const, level: 'high' as const, avgShareChangeRate: 0.6 },
+      { id: 'investor-7', name: 'V사', type: 'investor' as const, size: 'medium' as const, level: 'high' as const, avgShareChangeRate: 0.5 },
+      { id: 'investor-8', name: 'W사', type: 'investor' as const, size: 'small' as const, level: 'none' as const, avgShareChangeRate: 0.2 },
+      { id: 'investor-9', name: 'X사', type: 'investor' as const, size: 'small' as const, level: 'none' as const, avgShareChangeRate: 0.1 },
+      { id: 'investor-10', name: 'Y사', type: 'investor' as const, size: 'small' as const, level: 'none' as const, avgShareChangeRate: 0.15 },
+    ];
+
+    const edges = [
+      // Staff to staff
+      { source: 'staff-1', target: 'staff-2', strength: 'medium' as const },
+      { source: 'staff-1', target: 'staff-3', strength: 'medium' as const },
+
+      // Staff to brokers
+      { source: 'staff-2', target: 'broker-2', strength: 'weak' as const },
+      { source: 'staff-2', target: 'broker-3', strength: 'medium' as const },
+      { source: 'staff-1', target: 'broker-1', strength: 'strong' as const },
+
+      // Brokers to investors
+      { source: 'broker-2', target: 'investor-1', strength: 'weak' as const },
+      { source: 'broker-2', target: 'investor-3', strength: 'weak' as const },
+      { source: 'broker-2', target: 'investor-5', strength: 'weak' as const },
+      { source: 'broker-1', target: 'investor-2', strength: 'medium' as const },
+      { source: 'broker-1', target: 'investor-4', strength: 'medium' as const },
+      { source: 'broker-1', target: 'investor-6', strength: 'medium' as const },
+      { source: 'broker-1', target: 'investor-7', strength: 'medium' as const },
+      { source: 'broker-3', target: 'investor-8', strength: 'weak' as const },
+      { source: 'broker-3', target: 'investor-9', strength: 'weak' as const },
+      { source: 'broker-3', target: 'investor-10', strength: 'weak' as const },
+    ];
+
+    const staffRanking = [
+      { name: 'IR전무', avgShareChangeRate: 0.9 },
+      { name: 'IR팀장', avgShareChangeRate: 0.6 },
+      { name: 'IR대리', avgShareChangeRate: 0.4 },
+    ];
+
+    const brokerRanking = [
+      { name: 'B증권', avgShareChangeRate: 0.9 },
+      { name: 'A증권', avgShareChangeRate: 0.5 },
+      { name: 'C증권', avgShareChangeRate: 0.3 },
+    ];
+
+    return {
+      nodes,
+      edges,
+      staffRanking,
+      brokerRanking,
+    };
+  }
+
+  private async generateMockRegionalEfficiencyMap(): Promise<any> {
+    // Mock data for global cities/regions
+    const regions = [
+      { regionCode: 'US-NY', regionName: 'New York', efficiency: 88, meetingCount: 65, purchaseResponseRate: 78.5, investorCount: 45 },
+      { regionCode: 'GB-LDN', regionName: 'London', efficiency: 85, meetingCount: 58, purchaseResponseRate: 76.2, investorCount: 42 },
+      { regionCode: 'JP-TYO', regionName: 'Tokyo', efficiency: 82, meetingCount: 52, purchaseResponseRate: 73.8, investorCount: 38 },
+      { regionCode: 'HK', regionName: 'Hong Kong', efficiency: 80, meetingCount: 48, purchaseResponseRate: 71.5, investorCount: 35 },
+      { regionCode: 'SG', regionName: 'Singapore', efficiency: 78, meetingCount: 45, purchaseResponseRate: 69.3, investorCount: 32 },
+      { regionCode: 'DE-FRA', regionName: 'Frankfurt', efficiency: 75, meetingCount: 38, purchaseResponseRate: 66.8, investorCount: 28 },
+      { regionCode: 'KR-SEL', regionName: 'Seoul', efficiency: 73, meetingCount: 42, purchaseResponseRate: 64.5, investorCount: 30 },
+      { regionCode: 'CN-SHA', regionName: 'Shanghai', efficiency: 70, meetingCount: 35, purchaseResponseRate: 61.2, investorCount: 25 },
+      { regionCode: 'FR-PAR', regionName: 'Paris', efficiency: 68, meetingCount: 32, purchaseResponseRate: 58.9, investorCount: 23 },
+      { regionCode: 'AU-SYD', regionName: 'Sydney', efficiency: 65, meetingCount: 28, purchaseResponseRate: 56.4, investorCount: 20 },
+      { regionCode: 'AE-DXB', regionName: 'Dubai', efficiency: 62, meetingCount: 25, purchaseResponseRate: 53.7, investorCount: 18 },
+      { regionCode: 'CA-TOR', regionName: 'Toronto', efficiency: 60, meetingCount: 22, purchaseResponseRate: 51.2, investorCount: 16 },
+      { regionCode: 'CH-ZRH', regionName: 'Zurich', efficiency: 58, meetingCount: 20, purchaseResponseRate: 48.8, investorCount: 14 },
+      { regionCode: 'IN-MUM', regionName: 'Mumbai', efficiency: 55, meetingCount: 18, purchaseResponseRate: 46.3, investorCount: 12 },
+      { regionCode: 'BR-SAO', regionName: 'São Paulo', efficiency: 52, meetingCount: 15, purchaseResponseRate: 43.5, investorCount: 10 },
+    ];
+
+    const topRegions = regions
+      .sort((a, b) => b.efficiency - a.efficiency)
+      .slice(0, 3)
+      .map(r => ({
+        regionName: r.regionName,
+        efficiency: r.efficiency,
+        purchaseResponseRate: r.purchaseResponseRate,
+      }));
+
+    return {
+      regions,
+      topRegions,
+    };
+  }
+
+  /**
+   * Generate mock meeting-share correlation data (scatter plot)
+   */
+  private generateMockMeetingShareCorrelation() {
+    const investorStyles = ['Long-term', 'High turnover', 'Value', 'Growth', 'Activist'];
+    const investorNames = [
+      'Fidelity', 'BlackRock', 'Vanguard', 'State Street', 'T. Rowe Price',
+      'Capital Group', 'Wellington', 'Norges Bank', 'UBS', 'Goldman Sachs',
+      'JP Morgan', 'Morgan Stanley', 'Credit Suisse', 'BNP Paribas', 'Deutsche Bank',
+      'Allianz', 'AXA', 'Prudential', 'Legal & General', 'Aberdeen',
+    ];
+
+    const dataPoints = investorNames.map((name, index) => {
+      const meetingCount = Math.floor(Math.random() * 6) + 1; // 1-6 meetings
+      const investorStyle = investorStyles[Math.floor(Math.random() * investorStyles.length)];
+
+      // Create correlation: more meetings -> higher share change
+      // But High turnover style has lower correlation
+      let baseShareChange = meetingCount * 0.6 + Math.random() * 1.2; // Base correlation
+
+      if (investorStyle === 'High turnover') {
+        baseShareChange = Math.random() * 2.5; // Random, low correlation
+      } else if (investorStyle === 'Long-term') {
+        baseShareChange = meetingCount * 0.8 + Math.random() * 0.8; // Strong correlation
+      }
+
+      const shareChangeRate = Math.min(Math.max(baseShareChange, 0), 5); // Clamp 0-5%
+
+      // Determine performance level
+      let performanceLevel: 'high' | 'medium' | 'low' = 'low';
+      if (shareChangeRate >= 3.5) performanceLevel = 'high';
+      else if (shareChangeRate >= 2.0) performanceLevel = 'medium';
+
+      return {
+        investorName: name,
+        investorStyle,
+        meetingCount,
+        shareChangeRate: Math.round(shareChangeRate * 10) / 10, // Round to 1 decimal
+        eum: Math.floor(Math.random() * 900 + 100), // 100-1000 million USD
+        performanceLevel,
+      };
+    });
+
+    // Calculate correlation coefficient (Pearson's r)
+    const n = dataPoints.length;
+    const sumX = dataPoints.reduce((sum, p) => sum + p.meetingCount, 0);
+    const sumY = dataPoints.reduce((sum, p) => sum + p.shareChangeRate, 0);
+    const sumXY = dataPoints.reduce((sum, p) => sum + p.meetingCount * p.shareChangeRate, 0);
+    const sumX2 = dataPoints.reduce((sum, p) => sum + p.meetingCount ** 2, 0);
+    const sumY2 = dataPoints.reduce((sum, p) => sum + p.shareChangeRate ** 2, 0);
+
+    const numerator = n * sumXY - sumX * sumY;
+    const denominator = Math.sqrt((n * sumX2 - sumX ** 2) * (n * sumY2 - sumY ** 2));
+    const correlationCoefficient = Math.round((numerator / denominator) * 100) / 100;
+
+    // Calculate trend line (linear regression)
+    const meanX = sumX / n;
+    const meanY = sumY / n;
+    const slope = dataPoints.reduce((sum, p) =>
+      sum + (p.meetingCount - meanX) * (p.shareChangeRate - meanY), 0
+    ) / dataPoints.reduce((sum, p) => sum + (p.meetingCount - meanX) ** 2, 0);
+    const intercept = meanY - slope * meanX;
+
+    // Calculate average share change
+    const averageShareChange = Math.round((sumY / n) * 10) / 10;
+
+    return {
+      dataPoints,
+      correlationCoefficient,
+      trendLine: {
+        slope: Math.round(slope * 100) / 100,
+        intercept: Math.round(intercept * 100) / 100,
+      },
+      averageShareChange,
+    };
+  }
+
+  /**
+   * Generate mock event-market correlation data
+   */
+  private generateMockEventMarketCorrelation() {
+    const eventTypes = ['이벤트 1', '이벤트 2', '이벤트 3', '이벤트 4'];
+    const marketIndicators = ['주가 변화', '지분 변화', '지분율 변화'];
+
+    // Generate correlation matrix
+    const correlationMatrix: Array<{
+      eventType: string;
+      marketIndicator: string;
+      correlation: number;
+      pValue: number;
+      eventCount: number;
+      avgChange: number;
+    }> = [];
+    for (const indicator of marketIndicators) {
+      for (const eventType of eventTypes) {
+        let correlation = Math.random() * 2 - 1; // -1 to 1
+
+        // Make some patterns
+        if (eventType === '이벤트 1' && indicator === '주가 변화') {
+          correlation = 0.7 + Math.random() * 0.1;
+        } else if (eventType === '이벤트 1' && indicator === '지분 변화') {
+          correlation = 0.6 + Math.random() * 0.1;
+        }
+
+        correlationMatrix.push({
+          eventType,
+          marketIndicator: indicator,
+          correlation: Math.round(correlation * 10) / 10,
+          pValue: Math.random() * 0.1, // 0-0.1
+          eventCount: Math.floor(Math.random() * 15) + 5, // 5-20
+          avgChange: Math.round((Math.random() * 6 - 1) * 10) / 10, // -1 to 5
+        });
+      }
+    }
+
+    // Generate quarterly stock data
+    const quarters = ['1Q22', '2Q22', '3Q22', '4Q22', '1Q23', '2Q23', '3Q23', '4Q23', '1Q24', '2Q24', '3Q24', '4Q24'];
+    const quarterlyData = quarters.map((quarter, index) => {
+      const basePrice = 1000 + index * 150;
+      const meetingVolume = Math.floor(Math.random() * 1000) + 500; // 500-1500
+      const isHighlight = quarter === '1Q24';
+
+      // Generate events for some quarters
+      const events: Array<{
+        eventName: string;
+        eventType: string;
+        eventDate: string;
+        shortTermChange: number;
+        cumulativeChange: number;
+      }> = [];
+      if (Math.random() > 0.6 || isHighlight) {
+        const eventCount = Math.floor(Math.random() * 2) + 1; // 1-2 events
+
+        // Parse quarter to get year and quarter number
+        const year = parseInt('20' + quarter.slice(-2));
+        const quarterNum = parseInt(quarter.charAt(0));
+
+        // Calculate start month of quarter (1Q=1, 2Q=4, 3Q=7, 4Q=10)
+        const startMonth = (quarterNum - 1) * 3 + 1;
+
+        for (let i = 0; i < eventCount; i++) {
+          // Generate random date within the quarter
+          const monthOffset = Math.floor(Math.random() * 3); // 0, 1, or 2 months into quarter
+          const eventMonth = startMonth + monthOffset;
+          const daysInMonth = new Date(year, eventMonth, 0).getDate();
+          const eventDay = Math.floor(Math.random() * daysInMonth) + 1;
+
+          const eventDate = `${year}-${String(eventMonth).padStart(2, '0')}-${String(eventDay).padStart(2, '0')}`;
+
+          events.push({
+            eventName: `이벤트명 ${i + 1}`,
+            eventType: eventTypes[Math.floor(Math.random() * eventTypes.length)],
+            eventDate,
+            shortTermChange: Math.round((Math.random() * 6 - 1) * 10) / 10,
+            cumulativeChange: Math.round((Math.random() * 4 - 2) * 10) / 10,
+          });
+        }
+      }
+
+      return {
+        quarter,
+        meetingVolume,
+        stockPrice: basePrice + Math.floor(Math.random() * 200),
+        stockChangeRate: Math.round((Math.random() * 10 - 2) * 10) / 10, // -2% to 8%
+        isHighlight,
+        events,
+      };
+    });
+
+    return {
+      correlationMatrix,
+      quarterlyData,
+      eventTypes,
+      marketIndicators,
+    };
+  }
+
+  private generateMockIrEfficiencyLeaderboard() {
+    const meetingTypes = [
+      'One-on-One',
+      'ConferenceCall',
+      '화상미팅',
+      '국내 NDR',
+      '국내 Conference',
+      '해외 NDR',
+      '해외 Conference',
+      'CEO 투어',
+      'Lunch Meeting',
+      'Dinner Meeting',
+      '기타',
+    ];
+
+    const keywords = [
+      '배당정책',
+      'CET1 비율',
+      'ESG',
+      '주주환원',
+      '법적리스크',
+      '글로벌',
+      '수익성',
+      '성장성',
+      'ROE 개선',
+      'Northern Trust',
+    ];
+
+    // Generate meeting type efficiencies
+    const meetingTypeEfficiencies = meetingTypes.map((meetingType) => ({
+      meetingType,
+      irei: Math.round((Math.random() * 1.5 + 0.5) * 100) / 100, // 0.5 to 2.0
+      meetingCount: Math.floor(Math.random() * 1500) + 500, // 500-2000
+    }));
+
+    // Generate keyword efficiencies (top 3 have IREI, rest are null)
+    const keywordEfficiencies = keywords.map((keyword, index) => ({
+      rank: index + 1,
+      keyword,
+      irei: index < 3 ? Math.round((Math.random() * 1.5 + 0.8) * 100) / 100 : null, // Top 3: 0.8-2.3, Rest: null
+    }));
+
+    const currentIrei = 1.42;
+    const averageIrei = 0.82;
+    const irEfficiency = 32.21; // Percentage
+    const comparedToAverage = 73; // Percentage
+
+    return {
+      currentIrei,
+      averageIrei,
+      irEfficiency,
+      comparedToAverage,
+      meetingTypeEfficiencies,
+      keywordEfficiencies,
     };
   }
 }

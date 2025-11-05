@@ -21,11 +21,13 @@ import {
   updateIrActivitySchema,
   updateIrActivityStatusSchema,
   queryIrActivitiesSchema,
+  queryIrInsightsSchema,
   CreateIrActivityDto,
   CreateIrSubActivityDto,
   UpdateIrActivityDto,
   UpdateIrActivityStatusDto,
   QueryIrActivitiesDto,
+  QueryIrInsightsDto,
 } from './dto';
 
 @Controller('ir')
@@ -189,6 +191,23 @@ export class IrController {
       success: true,
       data: subActivity,
       message: 'Sub-activity added successfully',
+    };
+  }
+
+  /**
+   * GET /api/ir/insights
+   * Get IR insights and analytics data
+   */
+  @Get('insights')
+  async getInsights(
+    @Query(new ZodValidationPipe(queryIrInsightsSchema))
+    query: QueryIrInsightsDto,
+  ) {
+    const insights = await this.irService.getInsights(query);
+    return {
+      success: true,
+      data: insights,
+      message: 'IR insights retrieved successfully',
     };
   }
 
