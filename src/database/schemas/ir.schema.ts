@@ -226,7 +226,7 @@ export const irActivitiesRelations = relations(
 
 export const irSubActivitiesRelations = relations(
   irSubActivities,
-  ({ one }) => ({
+  ({ one, many }) => ({
     parentActivity: one(irActivities, {
       fields: [irSubActivities.parentActivityId],
       references: [irActivities.id],
@@ -235,6 +235,8 @@ export const irSubActivitiesRelations = relations(
       fields: [irSubActivities.ownerId],
       references: [users.id],
     }),
+    kbParticipants: many(irSubActivityKbParticipants),
+    visitors: many(irSubActivityVisitors),
   }),
 );
 

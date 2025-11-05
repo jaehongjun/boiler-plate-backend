@@ -367,6 +367,31 @@ export class IrService {
             visitorType: true,
           },
         },
+        subActivities: {
+          with: {
+            owner: {
+              columns: {
+                name: true,
+              },
+            },
+            kbParticipants: {
+              with: {
+                user: {
+                  columns: {
+                    name: true,
+                  },
+                },
+              },
+            },
+            visitors: {
+              columns: {
+                visitorName: true,
+                visitorType: true,
+              },
+            },
+          },
+          orderBy: (subActivities, { asc }) => [asc(subActivities.displayOrder)],
+        },
       },
       orderBy: (activities, { asc, desc }) => {
         const sortFn = sortOrder === 'asc' ? asc : desc;
@@ -402,7 +427,30 @@ export class IrService {
           .map((v: any) => v.visitorName),
         kbParticipants: activity.kbParticipants.map((p: any) => p.user.name),
         owner: activity.owner?.name,
+        createdAtISO: activity.createdAt.toISOString(),
         updatedAtISO: activity.updatedAt.toISOString(),
+        parentId: null, // Parent activities have no parent
+        children: activity.subActivities?.map((sub: any) => ({
+          id: sub.id,
+          title: sub.title,
+          startISO: sub.startDatetime?.toISOString() || activity.startDatetime.toISOString(),
+          endISO: sub.endDatetime?.toISOString() || activity.endDatetime?.toISOString(),
+          typePrimary: sub.typePrimary || activity.typePrimary,
+          status: sub.status,
+          category: sub.category || activity.category,
+          investors: sub.visitors
+            ?.filter((v: any) => v.visitorType === 'investor')
+            .map((v: any) => v.visitorName) || [],
+          brokers: sub.visitors
+            ?.filter((v: any) => v.visitorType === 'broker')
+            .map((v: any) => v.visitorName) || [],
+          kbParticipants: sub.kbParticipants?.map((p: any) => p.user.name) || [],
+          owner: sub.owner?.name,
+          createdAtISO: sub.createdAt.toISOString(),
+          updatedAtISO: sub.updatedAt.toISOString(),
+          parentId: activity.id,
+          children: [], // Sub-activities don't have children
+        })) || [],
       }),
     );
 

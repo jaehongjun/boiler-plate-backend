@@ -123,5 +123,10 @@ export interface IrActivityListItemResponse {
   owner?: string; // 담당자
 
   // 메타데이터
+  createdAtISO: string; // 등록일시
   updatedAtISO: string; // 마지막 업데이트
+
+  // 하위 활동 (펼침/접힘 기능을 위한)
+  parentId?: string | null; // 부모 활동 ID (하위 활동인 경우)
+  children?: IrActivityListItemResponse[]; // 하위 활동 목록
 }
