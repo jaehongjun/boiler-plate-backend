@@ -269,7 +269,7 @@ export class IrService {
       logType: 'create',
       userId,
       userName: user?.name || 'Unknown',
-      message: `${user?.name || 'Unknown'} 님이 IR활동을 생성했습니다.`,
+      message: `${user?.name || 'Unknown'} 님이 "${createDto.title}" 활동을 생성했습니다.`,
     });
 
     // Return the created activity
@@ -946,13 +946,25 @@ export class IrService {
       where: eq(users.id, userId),
     });
 
+    // Determine what was updated
+    const updatedFields: string[] = [];
+    if (updateDto.title !== undefined) updatedFields.push('활동명');
+    if (updateDto.contentHtml !== undefined) updatedFields.push('내용');
+    if (updateDto.keywords !== undefined) updatedFields.push('키워드');
+    if (updateDto.location !== undefined) updatedFields.push('장소');
+    if (updateDto.startDatetime !== undefined || updateDto.endDatetime !== undefined) updatedFields.push('일시');
+
+    const changedFieldsText = updatedFields.length > 0
+      ? updatedFields.join(', ')
+      : '활동 정보';
+
     await this.db.insert(irActivityLogs).values({
       id: this.generateId('log'),
       activityId: id,
       logType: 'update',
       userId,
       userName: user?.name || 'Unknown',
-      message: `${user?.name || 'Unknown'} 님이 내용을 변경했습니다.`,
+      message: `${user?.name || 'Unknown'} 님이 ${changedFieldsText}를 수정했습니다.`,
     });
 
     return this.findOne(id);
@@ -994,13 +1006,22 @@ export class IrService {
       where: eq(users.id, userId),
     });
 
+    // Map status to Korean labels
+    const statusLabels: Record<string, string> = {
+      SCHEDULED: '예정',
+      IN_PROGRESS: '진행중',
+      COMPLETED: '완료',
+      SUSPENDED: '중단',
+    };
+    const newStatusLabel = statusLabels[statusDto.status] || statusDto.status;
+
     await this.db.insert(irActivityLogs).values({
       id: this.generateId('log'),
       activityId: id,
       logType: 'status',
       userId,
       userName: user?.name || 'Unknown',
-      message: `${user?.name || 'Unknown'} 님이 상태를 변경했습니다.`,
+      message: `${user?.name || 'Unknown'} 님이 상태를 "${newStatusLabel}"(으)로 변경했습니다.`,
       oldValue: existing.status,
       newValue: statusDto.status,
     });
@@ -1053,7 +1074,7 @@ export class IrService {
         id: subId,
         parentActivityId: activityId,
         title: subDto.title,
-        ownerId: subDto.ownerId,
+        ownerId: subDto.ownerId || userId,
         status: subDto.status || '예정',
         startDatetime: subDto.startDatetime
           ? new Date(subDto.startDatetime)
@@ -1153,7 +1174,7 @@ export class IrService {
       logType: 'sub_activity',
       userId,
       userName: user?.name || 'Unknown',
-      message: `${user?.name || 'Unknown'} 님이 세부 활동을 추가했습니다.`,
+      message: `${user?.name || 'Unknown'} 님이 "${subDto.title}" 상세활동을 추가했습니다.`,
     });
 
     const created = await (this.db.query as any).irSubActivities.findFirst({
