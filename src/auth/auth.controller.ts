@@ -125,7 +125,15 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: '인증되지 않은 요청' })
   async getMe(@CurrentUser() user: CurrentUserData) {
-    return this.authService.getUser(user.id);
+    const userData = await this.authService.getUser(user.id);
+    return {
+      success: true,
+      data: {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+      },
+    };
   }
 
   @UseGuards(JwtAuthGuard)

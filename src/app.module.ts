@@ -9,6 +9,7 @@ import { FilesModule } from './files/files.module';
 import { IrModule } from './ir/ir.module';
 import { InvestorModule } from './investor/investor.module';
 import { BusinessTripModule } from './business-trip/business-trip.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { BusinessTripModule } from './business-trip/business-trip.module';
     IrModule,
     InvestorModule,
     BusinessTripModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

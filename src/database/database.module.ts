@@ -12,6 +12,7 @@ import * as irSchemas from './schemas/ir.schema';
 import * as investorSchemas from './schemas/investor.schema';
 import * as commonCodeSchemas from './schemas/common-code.schema';
 import * as businessTripSchemas from './schemas/business-trip.schema';
+import * as notificationSchemas from './schemas/notification.schema';
 
 export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
 
@@ -39,6 +40,7 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
             ...investorSchemas,
             ...commonCodeSchemas,
             ...businessTripSchemas,
+            ...notificationSchemas,
           },
         });
       },
