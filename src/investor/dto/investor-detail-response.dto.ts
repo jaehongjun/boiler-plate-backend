@@ -76,6 +76,7 @@ export const investorDetailResponseSchema = z.object({
   type: z.string(),
   turnover: z.enum(['High', 'Medium', 'Low']),
   orientation: z.enum(['Active', 'Inactive']),
+  lastMeetingDate: z.string().optional(),
   metrics: z.array(metricCardSchema),
   stockHoldingsChart: chartSchema,
   stakeChart: chartSchema,

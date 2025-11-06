@@ -1163,6 +1163,13 @@ export class InvestorService {
 
     const communicationsList = Array.from(communicationsMap.values());
 
+    // Calculate last meeting date (YYYY/MM/DD format)
+    let lastMeetingDate: string | undefined;
+    if (meetings.length > 0) {
+      const latestMeeting = new Date(meetings[0].meetingDate);
+      lastMeetingDate = `${latestMeeting.getFullYear()}/${String(latestMeeting.getMonth() + 1).padStart(2, '0')}/${String(latestMeeting.getDate()).padStart(2, '0')}`;
+    }
+
     // Map turnover and orientation
     const turnoverMap: Record<string, 'High' | 'Medium' | 'Low'> = {
       HIGH: 'High',
@@ -1216,6 +1223,7 @@ export class InvestorService {
       turnover: turnoverMap[currentSnapshot?.turnover || 'LOW'] || 'Low',
       orientation:
         orientationMap[currentSnapshot?.orientation || 'ACTIVE'] || 'Active',
+      lastMeetingDate,
       metrics,
       stockHoldingsChart: {
         title: '보유주식수 추이',
