@@ -138,7 +138,7 @@ async function main() {
   const snapshotData = [
     {
       rank: 1,
-      sOverO: 70,
+      sOverO: '70',
       ord: 132675,
       adr: 169522,
       type: 'HEDGE_FUND',
@@ -149,7 +149,7 @@ async function main() {
     },
     {
       rank: 2,
-      sOverO: 65,
+      sOverO: '65',
       ord: 120000,
       adr: 150000,
       type: 'PENSION',
@@ -160,7 +160,7 @@ async function main() {
     },
     {
       rank: 3,
-      sOverO: 60,
+      sOverO: '60',
       ord: 110000,
       adr: 140000,
       type: 'MUTUAL_FUND',
@@ -171,7 +171,7 @@ async function main() {
     },
     {
       rank: 4,
-      sOverO: 58,
+      sOverO: '58',
       ord: 105000,
       adr: 135000,
       type: 'INVESTMENT_ADVISOR',
@@ -182,7 +182,7 @@ async function main() {
     },
     {
       rank: 5,
-      sOverO: 55,
+      sOverO: '55',
       ord: 100000,
       adr: 130000,
       type: 'HEDGE_FUND',
@@ -193,7 +193,7 @@ async function main() {
     },
     {
       rank: 6,
-      sOverO: 52,
+      sOverO: '52',
       ord: 95000,
       adr: 125000,
       type: 'ETF',
@@ -204,7 +204,7 @@ async function main() {
     },
     {
       rank: 7,
-      sOverO: 50,
+      sOverO: '50',
       ord: 90000,
       adr: 120000,
       type: 'SOVEREIGN',
@@ -215,7 +215,7 @@ async function main() {
     },
     {
       rank: 8,
-      sOverO: 48,
+      sOverO: '48',
       ord: 85000,
       adr: 115000,
       type: 'PENSION',
@@ -226,7 +226,7 @@ async function main() {
     },
     {
       rank: 9,
-      sOverO: 45,
+      sOverO: '45',
       ord: 80000,
       adr: 110000,
       type: 'MUTUAL_FUND',
@@ -237,7 +237,7 @@ async function main() {
     },
     {
       rank: 10,
-      sOverO: 42,
+      sOverO: '42',
       ord: 75000,
       adr: 105000,
       type: 'BANK',
@@ -320,7 +320,7 @@ async function main() {
         quarter: period.quarter,
         groupRank: null, // 자회사는 랭킹 없음
         groupChildCount: null,
-        sOverO: childSnapshotTemplate.sOverO + variation,
+        sOverO: String(childSnapshotTemplate.sOverO + variation),
         ord: childSnapshotTemplate.ord + variation * 500,
         adr: childSnapshotTemplate.adr + variation * 500,
         investorType: childSnapshotTemplate.type as any,

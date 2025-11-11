@@ -18,6 +18,8 @@ import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 
 import { NotificationService } from './notification.service';
 import {
+  BroadcastNotificationDto,
+  BroadcastNotificationDtoSchema,
   CreateNotificationDto,
   CreateNotificationDtoSchema,
   UpdateNotificationDto,
@@ -122,6 +124,24 @@ export class NotificationController {
     return {
       success: true,
       message: 'Notification deleted successfully',
+    };
+  }
+
+  /**
+   * POST /api/notifications/broadcast
+   * Broadcast notification to all users (Admin only)
+   */
+  @Post('broadcast')
+  @HttpCode(HttpStatus.CREATED)
+  async broadcast(
+    @Body(new ZodValidationPipe(BroadcastNotificationDtoSchema))
+    dto: BroadcastNotificationDto,
+  ) {
+    const result = await this.notificationService.broadcast(dto);
+    return {
+      success: true,
+      data: result,
+      message: result.message,
     };
   }
 }

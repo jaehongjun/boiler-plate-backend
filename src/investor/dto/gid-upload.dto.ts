@@ -27,7 +27,7 @@ export interface ParsedGidRow {
   country: string;
   city?: string | null;
   investorName: string;
-  sOverO?: number | null;
+  sOverO?: string | null; // numeric type in DB, represented as string
   ord?: number | null;
   adr?: number | null;
   investorType?: string | null;

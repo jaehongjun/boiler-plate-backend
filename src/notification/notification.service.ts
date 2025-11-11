@@ -5,7 +5,11 @@ import { and, desc, eq } from 'drizzle-orm';
 import { DATABASE_CONNECTION } from '../database/database.module';
 import { notifications, users } from '../database/schemas';
 
-import { CreateNotificationDto, UpdateNotificationDto } from './dto';
+import {
+  BroadcastNotificationDto,
+  CreateNotificationDto,
+  UpdateNotificationDto,
+} from './dto';
 
 @Injectable()
 export class NotificationService {
@@ -114,5 +118,45 @@ export class NotificationService {
       .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
 
     return results.length;
+  }
+
+  /**
+   * Broadcast notification to all users
+   * - Creates a notification for every user in the system
+   * - Useful for system-wide announcements
+   */
+  async broadcast(dto: BroadcastNotificationDto) {
+    const BATCH_SIZE = 1000; // PostgreSQL parameter limit 방지
+
+    // 1. 모든 활성 유저 ID 조회
+    const allUsers = await this.db.select({ id: users.id }).from(users);
+
+    if (allUsers.length === 0) {
+      return { sent: 0, totalUsers: 0 };
+    }
+
+    let totalInserted = 0;
+
+    // 2. Batch로 나눠서 insert (대량 유저 대비)
+    for (let i = 0; i < allUsers.length; i += BATCH_SIZE) {
+      const batch = allUsers.slice(i, i + BATCH_SIZE);
+
+      const notificationRecords = batch.map((user) => ({
+        userId: user.id,
+        eventType: dto.eventType,
+        title: dto.title,
+        metadata: dto.metadata || {},
+        read: false,
+      }));
+
+      await this.db.insert(notifications).values(notificationRecords);
+      totalInserted += notificationRecords.length;
+    }
+
+    return {
+      sent: totalInserted,
+      totalUsers: allUsers.length,
+      message: `Successfully sent notification to ${totalInserted} users`,
+    };
   }
 }

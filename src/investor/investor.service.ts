@@ -1011,8 +1011,8 @@ export class InvestorService {
         label: '% S/O',
         value: currentSnapshot?.sOverO ? `${currentSnapshot.sOverO}%` : 'N/A',
         change: calculateChange(
-          currentSnapshot?.sOverO ?? null,
-          prevSnapshot?.sOverO ?? null,
+          currentSnapshot?.sOverO ? Number(currentSnapshot.sOverO) : null,
+          prevSnapshot?.sOverO ? Number(prevSnapshot.sOverO) : null,
         ),
         iconType: 'trending-up' as const,
       },

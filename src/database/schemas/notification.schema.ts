@@ -8,12 +8,21 @@ import { users } from './users';
  * Notification event types
  */
 export enum NotificationEventType {
+  // System notifications
+  SYSTEM_ANNOUNCEMENT = 'SYSTEM_ANNOUNCEMENT',
+  SYSTEM_MAINTENANCE = 'SYSTEM_MAINTENANCE',
+
+  // IR Activity notifications
   IR_ACTIVITY_CREATED = 'IR_ACTIVITY_CREATED',
   IR_ACTIVITY_UPDATED = 'IR_ACTIVITY_UPDATED',
   IR_ACTIVITY_FIELD_UPDATED = 'IR_ACTIVITY_FIELD_UPDATED',
   IR_ACTIVITY_DELETED = 'IR_ACTIVITY_DELETED',
+
+  // Investor notifications
   INVESTOR_BULK_UPDATED = 'INVESTOR_BULK_UPDATED',
   INVESTOR_UPDATED = 'INVESTOR_UPDATED',
+
+  // Trip notifications
   TRIP_CREATED = 'TRIP_CREATED',
   TRIP_UPDATED = 'TRIP_UPDATED',
 }

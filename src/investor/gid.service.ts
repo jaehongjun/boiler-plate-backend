@@ -375,7 +375,7 @@ export class GidService {
       country: country || '',
       city: city || null,
       investorName: String(investorName),
-      sOverO: this.parseNumber(getValue(['so', 'soveroo', 's/o'])),
+      sOverO: this.parseNumericString(getValue(['so', 'soveroo', 's/o'])),
       ord: this.parseNumber(getValue(['ord'])),
       adr: this.parseNumber(getValue(['adr'])),
       investorType: getValue(['investortype', 'type']),
@@ -391,6 +391,12 @@ export class GidService {
     if (value === null || value === undefined || value === '') return null;
     const num = Number(value);
     return isNaN(num) ? null : num;
+  }
+
+  private parseNumericString(value: any): string | null {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    return isNaN(num) ? null : String(num);
   }
 
   /**

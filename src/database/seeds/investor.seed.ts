@@ -137,7 +137,7 @@ async function main() {
     quarter: 4,
     groupRank: 1, // Rank 1위
     groupChildCount: 13, // UI에서 "1(13)" 표시용
-    sOverO: 80,
+    sOverO: '80',
     ord: 40,
     adr: 50,
     investorType: 'INVESTMENT_ADVISOR',
@@ -155,7 +155,7 @@ async function main() {
       year: 2024,
       quarter: 4,
       groupRank: null, // 자회사는 순위 없음 (UI에서 "-" 표시)
-      sOverO: 80,
+      sOverO: '80',
       ord: 40,
       adr: 50,
       investorType: 'INVESTMENT_ADVISOR',
@@ -174,7 +174,7 @@ async function main() {
     quarter: 4,
     groupRank: 2, // Rank 2위
     groupChildCount: 1,
-    sOverO: 20,
+    sOverO: '20',
     ord: 49,
     adr: 23,
     investorType: 'INVESTMENT_ADVISOR',
@@ -192,7 +192,7 @@ async function main() {
     quarter: 4,
     groupRank: 3, // Rank 3위
     groupChildCount: 0,
-    sOverO: 80,
+    sOverO: '80',
     ord: 40,
     adr: 50,
     investorType: 'INVESTMENT_ADVISOR',
