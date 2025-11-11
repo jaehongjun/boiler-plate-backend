@@ -8,6 +8,7 @@ import {
   bigint,
   integer,
   pgEnum,
+  index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
@@ -133,15 +134,26 @@ export const irActivityVisitors = pgTable(
     activityId: varchar('activity_id', { length: 50 })
       .references(() => irActivities.id, { onDelete: 'cascade' })
       .notNull(),
-    visitorName: varchar('visitor_name', { length: 255 }).notNull(),
+
+    // 투자자(회사) 연결 - IR Insights용
+    investorId: integer('investor_id'), // references investors.id (추후 relation 추가)
+
+    // 방문자 개인 정보
+    visitorName: varchar('visitor_name', { length: 255 }).notNull(), // 개인 이름
+    visitorTitle: varchar('visitor_title', { length: 100 }), // 직책 (예: Portfolio Manager)
+    visitorEmail: varchar('visitor_email', { length: 255 }), // 이메일
     visitorType: varchar('visitor_type', { length: 20 }), // 'investor' or 'broker'
-    company: varchar('company', { length: 255 }),
+
+    // Fallback (매칭 안 될 경우)
+    company: varchar('company', { length: 255 }), // 회사명 텍스트
+
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (table) => ({
     pk: { columns: [table.activityId, table.visitorName] },
+    investorIdx: index('ir_activity_visitors_investor_idx').on(table.investorId),
   }),
 );
 

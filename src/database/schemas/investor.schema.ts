@@ -12,6 +12,7 @@ import {
   index,
   uniqueIndex,
   uuid,
+  numeric,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
@@ -88,6 +89,11 @@ export const investors = pgTable(
       .default(false)
       .notNull(), // 대표 row 여부
 
+    // IR Insights용 추가 필드
+    eum: numeric('eum', { precision: 18, scale: 2 }), // 자산운용규모 (Million USD)
+    investmentStyle: varchar('investment_style', { length: 50 }), // 투자 스타일 (예: Growth, ESG, Deep Value)
+    strategy: varchar('strategy', { length: 50 }), // 투자 전략 (예: Active, Passive)
+
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -99,6 +105,9 @@ export const investors = pgTable(
     nameIdx: index('investors_name_idx').on(t.name),
     parentIdx: index('investors_parent_idx').on(t.parentId),
     countryIdx: index('investors_country_idx').on(t.countryCode),
+    eumIdx: index('investors_eum_idx').on(t.eum),
+    styleIdx: index('investors_style_idx').on(t.investmentStyle),
+    strategyIdx: index('investors_strategy_idx').on(t.strategy),
   }),
 );
 
@@ -120,7 +129,7 @@ export const investorSnapshots = pgTable(
     // 그룹 내 자회사 수 (대표 스냅샷에만 의미)
     groupChildCount: smallint('group_child_count'),
 
-    sOverO: smallint('s_over_o'), // & S/O (percentage)
+    sOverO: numeric('s_over_o', { precision: 10, scale: 4 }), // S/O 지분율 (%) - 예: 0.1000
     ord: integer('ord'), // Ordinary shares - need larger range
     adr: integer('adr'), // ADR shares - need larger range
 
