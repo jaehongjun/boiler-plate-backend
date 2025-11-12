@@ -2,11 +2,12 @@ import { z } from 'zod';
 
 /**
  * Schema for querying IR Insights
- * Supports date range filtering for analytics
+ * Supports date range and investor filtering for analytics
  */
 export const queryIrInsightsSchema = z.object({
   startISO: z.string().datetime().optional(),
   endISO: z.string().datetime().optional(),
+  investorId: z.string().uuid().optional(), // Filter by specific investor
 });
 
 export type QueryIrInsightsDto = z.infer<typeof queryIrInsightsSchema>;

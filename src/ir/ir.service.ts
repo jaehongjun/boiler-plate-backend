@@ -1218,10 +1218,25 @@ export class IrService {
       : new Date(new Date().setFullYear(endDate.getFullYear() - 1)); // Default to 1 year ago
 
     // Build base where clause for date filtering
-    const dateFilter = and(
+    const dateFilterConditions = [
       gte(irActivities.startDatetime, startDate),
       lte(irActivities.startDatetime, endDate),
-    );
+    ];
+
+    // Add investor filter if provided
+    const investorFilter = query.investorId
+      ? sql`EXISTS (
+          SELECT 1 FROM ${irActivityVisitors}
+          WHERE ${irActivityVisitors.activityId} = ${irActivities.id}
+          AND ${irActivityVisitors.investorId} = ${query.investorId}
+        )`
+      : undefined;
+
+    if (investorFilter) {
+      dateFilterConditions.push(investorFilter);
+    }
+
+    const dateFilter = and(...dateFilterConditions);
 
     // 1. Summary Statistics
     const [summaryResult] = await this.db
